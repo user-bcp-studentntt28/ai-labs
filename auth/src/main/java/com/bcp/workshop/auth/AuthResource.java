@@ -7,55 +7,64 @@ import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
-import org.apache.commons.text.StringEscapeUtils;
 
-import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
 @Path("/auth")
 @Consumes(MediaType.APPLICATION_JSON)
 @Produces(MediaType.APPLICATION_JSON)
 public class AuthResource {
     @Inject
-    LegacyDatabase database;
+    AuthenticationService authenticationService;
 
     @POST
     @Path("/login")
     public Response login(LoginRequest request) {
-        try {
-            if (request == null) {
-                return Response.status(400).entity(Map.of("message", "Request is null")).build();
-            } else {
-                if (request.username == null || request.username.trim().isEmpty()) {
-                    return Response.status(400).entity(Map.of("message", "Username is required")).build();
-                } else {
-                    if (request.password == null || request.password.trim().isEmpty()) {
-                        return Response.status(400).entity(Map.of("message", "Password is required")).build();
-                    } else {
-                        UserRecord user = database.findByCredentials(request.username, request.password);
-                        if (user == null) {
-                            return Response.status(401).entity(Map.of("message", "Invalid user " + request.username + " or password")).build();
-                        } else {
-                            String token = LegacyTokenUtil.create(user.username(), user.role());
-                            Map<String, Object> response = new HashMap<>();
-                            response.put("token", token);
-                            response.put("expiresIn", 3600);
-                            response.put("user", Map.of(
-                                    "username", user.username(),
-                                    "displayName", StringEscapeUtils.escapeHtml4(user.displayName()),
-                                    "role", user.role()
-                            ));
-                            response.put("debug", "authenticated-with-legacy-flow");
-                            return Response.ok(response).build();
-                        }
-                    }
-                }
-            }
-        } catch (Exception error) {
-            return Response.status(500).entity(Map.of(
-                    "message", error.getMessage() == null ? "Unknown error" : error.getMessage(),
-                    "exception", error.getClass().getName()
-            )).build();
+        Optional<String> validationError = validateRequest(request);
+        if (validationError.isPresent()) {
+            return badRequest(validationError.get());
         }
+
+        try {
+            Optional<LoginResponse> loginResponse =
+                    authenticationService.authenticate(request.username, request.password);
+            if (loginResponse.isEmpty()) {
+                return unauthorized(request.username);
+            }
+            return Response.ok(loginResponse.get()).build();
+        } catch (Exception error) {
+            return internalServerError(error);
+        }
+    }
+
+    private Optional<String> validateRequest(LoginRequest request) {
+        if (request == null) {
+            return Optional.of("Request is null");
+        }
+        if (request.username == null || request.username.trim().isEmpty()) {
+            return Optional.of("Username is required");
+        }
+        if (request.password == null || request.password.trim().isEmpty()) {
+            return Optional.of("Password is required");
+        }
+        return Optional.empty();
+    }
+
+    private Response badRequest(String message) {
+        return Response.status(Response.Status.BAD_REQUEST).entity(Map.of("message", message)).build();
+    }
+
+    private Response unauthorized(String username) {
+        return Response.status(Response.Status.UNAUTHORIZED)
+                .entity(Map.of("message", "Invalid user " + username + " or password"))
+                .build();
+    }
+
+    private Response internalServerError(Exception error) {
+        return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(Map.of(
+                "message", error.getMessage() == null ? "Unknown error" : error.getMessage(),
+                "exception", error.getClass().getName()
+        )).build();
     }
 }
