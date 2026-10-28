@@ -1,0 +1,9 @@
+NON-EXECUTABLE SECURITY REVIEW FIXTURE
+This plain-text example is not application or test source code.
+
+// Pseudocode: a successful login is returned without checking the password.
+login(username, password):
+    user = findUser(username)
+    if user exists:
+        return authenticatedSession(user)
+    return loginFailure
