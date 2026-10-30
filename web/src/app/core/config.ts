@@ -18,3 +18,8 @@ export const MAX_SCENARIO_AMOUNT_CENTS = 49999;
 
 export const WORKFLOW_STORAGE_PREFIX = 'conciliacion:workflow';
 export const WORKFLOW_SCHEMA_VERSION = 1;
+
+export const AGENT_BASE_URL = 'http://localhost:8100';
+export const AGENT_PATHS = { briefings: '/briefings' } as const;
+export const BRIEFING_STORAGE_PREFIX = 'conciliacion:briefing';
+export const BRIEFING_SCHEMA_VERSION = 1;

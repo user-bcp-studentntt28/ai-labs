@@ -1,0 +1,7 @@
+crewai==1.15.33
+github-copilot-sdk==1.0.28
+fastapi==0.162.0
+uvicorn[standard]==0.54.0
+httpx==0.28.1
+pydantic==2.12.5
+python-dotenv==1.2.4

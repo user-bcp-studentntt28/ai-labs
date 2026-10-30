@@ -9,7 +9,7 @@ Dependencias: HU-CONC-03 (detalle donde aparecen las acciones) y HU-CONC-01 (ide
 - [x] 1.1 Test: transiciones válidas por rol: "Iniciar atención" desde `Sin atender` o `Devuelta`; "Enviar a revisión" desde `En atención`; "Aprobar cierre local" y "Devolver" desde `En revisión`, solo Supervisor.
 - [x] 1.2 Test: transiciones inválidas se rechazan y el estado no cambia.
 - [x] 1.3 Implementar `applyTransition` (`workflow.ts`) con los nombres de estado del spec como valores internos.
-- [x] 1.4 Test: "Aprobar cierre local" y "Devolver" rechazan nota vacía o solo espacios; "Enviar a revisión" acepta nota vacía.
+- [x] 1.4 Test: "Aprobar cierre local" y "Devolver" rechazan nota vacía o solo espacios; "Enviar a revisión" también la exige (respuesta del analista, ajustado en HU-CONC-06).
 - [x] 1.5 Implementar la regla de nota obligatoria en la función pura.
 
 ## 2. Almacenamiento (TDD)

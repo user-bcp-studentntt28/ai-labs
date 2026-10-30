@@ -13,7 +13,7 @@ El sistema SHALL permitir iniciar la atención, enviar a revisión, aprobar el c
 
 - **WHEN** el analista envía a revisión una incidencia `En atención`
 - **THEN** el estado local pasa a `En revisión`
-- **AND** la nota es opcional
+- **AND** la respuesta del analista (nota) es obligatoria
 
 #### Scenario: Aprobar cierre local
 
@@ -28,12 +28,17 @@ El sistema SHALL permitir iniciar la atención, enviar a revisión, aprobar el c
 
 ### Requirement: Notas requeridas
 
-El sistema SHALL NOT aceptar una nota vacía en las transiciones "Aprobar cierre local" y "Devolver", y SHALL registrar la nota en el historial cuando se ingrese.
+El sistema SHALL NOT aceptar una nota vacía en las transiciones "Enviar a revisión" (respuesta del analista), "Aprobar cierre local" y "Devolver", y SHALL registrar la nota en el historial cuando se ingrese.
 
 #### Scenario: Nota vacía al aprobar el cierre
 
 - **WHEN** el supervisor intenta aprobar el cierre local sin nota
 - **THEN** el sistema rechaza la transición y mantiene el estado anterior
+
+#### Scenario: Enviar a revisión sin respuesta
+
+- **WHEN** el analista intenta enviar a revisión sin escribir su respuesta
+- **THEN** el sistema rechaza la transición y mantiene el estado `En atención`
 
 #### Scenario: Devolver sin observaciones
 

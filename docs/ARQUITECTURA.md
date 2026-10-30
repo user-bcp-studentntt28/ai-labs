@@ -37,6 +37,7 @@ definido en [ENDPOINTS.md](ENDPOINTS.md).
 | `execution/` | #31: conciliación | `ExecutionService`, `ExecutionPanelComponent` (con métricas) |
 | `operations/` | #32: revisión | `operations.view-model.ts` (funciones puras), lista, detalle y saldo de wallet |
 | `tracking/` | #34: seguimiento local | `workflow.ts` (transiciones puras), `WorkflowStorageService`, `TrackingService`, `IncidentTrackingComponent` |
+| `supervisor-agent/` | HU-CONC-06: mensaje del agente | `briefing.ts` (tipos y validación), `SupervisorBriefingService` (HTTP, guardado local, descarta respuestas viejas), `SupervisorBriefingComponent` |
 | `provider-control/` | #30: escenarios del proveedor | `validation.ts` (pura), `ProviderControlService`, `ScenarioPanelComponent` |
 | `testing/` | Fixtures y ayudas de prueba | `fixtures.ts`, `http-helpers.ts` |
 
@@ -55,9 +56,15 @@ límites y la clave de almacenamiento están en un solo lugar (`core/config.ts`)
 3. **Revisar** (`operations.view-model.ts`): `scopeToWallet` deja lo que pertenece a la wallet consultada,
    `buildOperationRows` agrupa por referencia (`Payment.id` = `ProviderPayment.id` = `LedgerEntry.operation`) y
    `filterRows` aplica búsqueda y filtros. `BALANCE_MISMATCH` va a la sección "Saldo de wallet".
-4. **Seguimiento** (`TrackingService`): `applyTransition` valida estado, rol y nota; si es válida, se guarda en
-   `localStorage` (`conciliacion:workflow:<grupo>:<wallet>`). Si el almacenamiento falla, la transición no se
-   confirma. Nunca se envía al API.
+4. **Seguimiento** (`TrackingService`): `applyTransition` valida estado, rol y nota (el analista debe escribir su
+   respuesta al enviar a revisión); si es válida, se guarda en `localStorage`
+   (`conciliacion:workflow:<grupo>:<wallet>`). Si el almacenamiento falla, la transición no se confirma. Nunca se
+   envía al API.
+   **Agente supervisor** (`SupervisorBriefingService`): tras una transición válida del analista (iniciar atención
+   o enviar a revisión) llama a `POST http://localhost:8100/briefings` (`agent-supervisor/`). El agente lee del
+   mock los pagos, el proveedor, el ledger y las incidencias, y devuelve un mensaje breve (prioridad, titular,
+   problema, evidencia y qué decidir). La web lo guarda en `localStorage` (`conciliacion:briefing:<grupo>:<wallet>`)
+   y lo muestra al supervisor. Si el agente falla, la transición se conserva y se informa.
 5. **Escenarios** (`ProviderControlService`): `validateControlInput` (importes 1 a 49999 céntimos) y
    `POST /control/settlements`; tras un éxito recarga las fuentes y avisa que hay que volver a conciliar.
 
@@ -100,6 +107,7 @@ El detalle de alternativas está en `openspec/changes/hu-conc-0N-*/design.md`.
 | #32 | `hu-conc-03-revisar-operaciones` | `conciliacion-revision-operaciones` | `operations/` |
 | #34 | `hu-conc-04-seguimiento-incidencia-local` | `conciliacion-seguimiento-local` | `tracking/` |
 | #30 | `hu-conc-05-escenarios-proveedor` | `conciliacion-escenarios-proveedor` | `provider-control/` |
+| (sin Issue) | `hu-conc-06-agente-supervisor` | `conciliacion-agente-supervisor` | `supervisor-agent/`, `agent-supervisor/` |
 
 Cada change tiene `proposal.md`, `specs/`, `design.md` y `tasks.md` en `openspec/changes/`. La demo
 `conciliacion-demo.html` (raíz) se conserva como referencia de comportamiento y no se modificó.
@@ -108,4 +116,5 @@ Cada change tiene `proposal.md`, `specs/`, `design.md` y `tasks.md` en `openspec
 
 - Sin verificación en navegador ni end-to-end (H-WEB-09 en [../HALLAZGOS.md](../HALLAZGOS.md)).
 - El grupo 3 es compartido; las escrituras lo modifican para todos (H-WEB-10).
+- `agent-supervisor/` es un proceso aparte (`uvicorn app.main:app --port 8100`). Usa el SDK de GitHub Copilot con tu token de `gh` (modelo `claude-sonnet-5.5`); sin token o si el modelo falla devuelve un resumen automático sin IA.
 - `docker compose` no arranca el conjunto: referencia `./auth` y `./api`, que no existen (H-WEB-11).

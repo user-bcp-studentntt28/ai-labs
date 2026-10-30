@@ -139,6 +139,20 @@ tbody tr:hover, tbody tr:focus { background: #f8faff; outline: 0; }
 .audit-list { margin: 8px 0 0; padding-left: 17px; color: #667389; font-size: 11px; line-height: 1.55; }
 .incident-work { margin: 10px 0; border: 1px solid #dfe6ff; border-radius: 9px; background: #f8f9ff; padding: 11px; }
 .incident-work h3 { color: #334878; }
+.briefing { margin: 10px 0; border: 1px solid #d9e2fb; border-left: 4px solid var(--blue); border-radius: 8px; background: #fff; padding: 10px 12px; font-size: 12px; line-height: 1.5; color: var(--ink); }
+.briefing.high { border-left-color: var(--red); }
+.briefing.medium { border-left-color: var(--amber); }
+.briefing.low { border-left-color: var(--green); }
+.briefing.loading { color: var(--muted); }
+.briefing p { margin: 6px 0; }
+.briefing ul { margin: 6px 0; padding-left: 18px; color: #4d5b73; }
+.briefing-head { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.briefing-priority { border-radius: 20px; padding: 2px 8px; background: #eef2ff; color: #4258ac; font-size: 10px; font-weight: 750; }
+.briefing.high .briefing-priority { background: var(--red-soft); color: var(--red); }
+.briefing.medium .briefing-priority { background: var(--amber-soft); color: var(--amber); }
+.briefing.low .briefing-priority { background: var(--green-soft); color: var(--green); }
+.briefing-meta { margin-top: 6px; color: var(--muted); font-size: 10px; }
+.briefing-error { padding: 6px 0; }
 .incident-owner { margin-top: 7px; color: #64728a; font-size: 11px; line-height: 1.5; }
 .drawer-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
 
