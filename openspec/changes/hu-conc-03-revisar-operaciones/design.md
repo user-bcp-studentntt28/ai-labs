@@ -62,6 +62,8 @@ Bajo `web/src/`, todos nuevos:
 
 **Resuelto:** las incidencias del grupo quedan como el contrato las devuelve, por wallet (HU-CONC-01).
 
+**Aprobado (alcance por wallet, ajuste posterior a la implementación):** solo `GET /payments` depende de la wallet; settlements, ledger e incidencias son del grupo. La lista muestra únicamente las operaciones de la wallet consultada (sus pagos con sus settlements, asientos e incidencias) y las incidencias `BALANCE_MISMATCH` cuyo `payment_id` es esa wallet. Las referencias del grupo sin pago en la wallet (por ejemplo huérfanos `MISSING_WALLET`) se cuentan en un aviso y se muestran solo si el analista marca «Incluir referencias del grupo». Implementado en `scopeToWallet` (`operations.view-model.ts`).
+
 ## Estrategia incremental
 
 1. Caracterizar la agrupación actual de la demo con datos de cada escenario (AMOUNT, MISSING, DUPLICATE, CLEAR, ORPHAN) antes de implementarla en Angular.

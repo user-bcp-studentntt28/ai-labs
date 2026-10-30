@@ -9,7 +9,7 @@
   - `vitest.config.ts`: `environment: 'node'`, `include: ['src/**/*.spec.ts']`, cobertura v8.
 - Estado actual: `web/src/` **no existe**. Hay configuración, `node_modules` y `public/`, pero no código fuente. El scaffold de la aplicación es un prerrequisito del change.
 - Referencia funcional: `conciliacion-demo.html` (raíz). No se modifica; solo muestra el comportamiento previo, por ejemplo `loadSources` con `Promise.all`, error único y marca de tiempo global.
-- Contrato: `docs/ENDPOINTS.md`, servidor `http://127.0.0.1:8787`. Lecturas `GET /payments?walletId=`, `GET /settlements`, `GET /ledger` y `GET /reconciliations/incidents`.
+- Contrato: `docs/ENDPOINTS.md`. El servidor `http://127.0.0.1:8787` del OpenAPI es solo un placeholder: no hay mock local. La demo usa el mock remoto `https://bcp-wallet-mock.yefri.workers.dev/groups/3`, verificado: responde 200 en las cuatro lecturas y permite CORS. Lecturas `GET /payments?walletId=`, `GET /settlements`, `GET /ledger` y `GET /reconciliations/incidents`.
 - `compose.yaml` referencia `./api` y `./auth`, que no existen en este árbol. El mock está fuera del repositorio.
 - Instrucciones de `web` en AI Labs: conservar `POST /auth/login` y `GET /api/tasks`. Este change no los toca, pero no deben romperse si existen más adelante.
 
@@ -35,7 +35,7 @@
 - `GET /settlements`, `GET /ledger` y `GET /reconciliations/incidents`, según `docs/ENDPOINTS.md`.
 - Cada respuesta debe ser un arreglo JSON; de lo contrario se trata como error de formato.
 - Importes enteros en céntimos. La conversión a PEN ocurre solo en presentación.
-- Base URL `http://127.0.0.1:8787`, definida en un único lugar.
+- Base URL por defecto `https://bcp-wallet-mock.yefri.workers.dev/groups/3`, definida en un único lugar.
 - Instrucciones de `web` (`POST /auth/login`, `GET /api/tasks`): no se modifican.
 
 ## Componentes afectados
@@ -63,8 +63,9 @@ Todos son nuevos, bajo `web/src/` (la ruta exacta se confirma en el scaffold):
 
 **Decidido:**
 - Test de componente: `jsdom` aprobado como devDependency.
-- Base URL: `http://127.0.0.1:8787` en una sola constante de configuración, con llamada directa. Si CORS lo bloquea, se usa un proxy de `ng serve`, sin cambiar el código de servicios.
-- Scaffold de `web/src/`: generado con Angular CLI (`ng generate`), respetando `angular.json` (`src/main.ts`, `src/index.html`, `src/styles.css`).
+- Base URL: `https://bcp-wallet-mock.yefri.workers.dev/groups/3` (mock remoto de la demo) en una sola constante de configuración, con llamada directa. CORS verificado, así que no se necesita proxy de `ng serve`. Las rutas del contrato se añaden a esa base. No se usa `http://127.0.0.1:8787`, que es solo el placeholder del OpenAPI.
+- Scaffold de `web/src/`: creado a mano (`src/main.ts`, `src/index.html`, `src/styles.css`, configuración de la aplicación), respetando `angular.json`, que ya existe y usa `@angular-devkit/build-angular:application`. No se ejecuta `ng new` para no sobrescribir la configuración.
+- Pruebas de componente: además de `jsdom`, requieren un archivo de setup (`zone.js/testing`, `TestBed.initTestEnvironment`) y plantillas inline, porque Vitest no compila `templateUrl`. Se verifica con una prueba de humo antes de escribir las demás.
 - Grupo (#33): el grupo es el identificador de la URL base (`/groups/3`). La pantalla muestra las incidencias que el contrato devuelve para el último proceso de conciliación del grupo y wallet; no se agrega filtro.
 
 **Resuelto:** "incidencias del grupo" significa las incidencias que devuelve el contrato para el último proceso de conciliación del grupo (identificado en la URL base) y el wallet. Se mantiene ese comportamiento, sin filtro adicional.

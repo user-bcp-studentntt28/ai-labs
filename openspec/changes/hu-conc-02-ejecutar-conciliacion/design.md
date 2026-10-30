@@ -2,7 +2,7 @@
 
 ## Contexto técnico
 
-- Proyecto objetivo: `web/` (Angular 21, Vitest en `environment: 'node'`, `include: src/**/*.spec.ts`). Base común con HU-CONC-01: servicio HTTP, estado de fuentes, base URL `http://127.0.0.1:8787` y decisión D5 de tests (ver [design de HU-CONC-01](../hu-conc-01-consultar-fuentes/design.md)).
+- Proyecto objetivo: `web/` (Angular 21, Vitest en `environment: 'node'`, `include: src/**/*.spec.ts`). Base común con HU-CONC-01: servicio HTTP, estado de fuentes, base URL del mock remoto `https://bcp-wallet-mock.yefri.workers.dev/groups/3` y decisión D5 de tests (ver [design de HU-CONC-01](../hu-conc-01-consultar-fuentes/design.md)).
 - Contrato: `docs/ENDPOINTS.md`, `POST /reconciliations` sin cuerpo. Responde `MATCHED` con `differences: []` o `DIFFERENCES` con incidencias `OPEN`.
 - Depende de HU-CONC-01: solo se ejecuta si el conjunto de fuentes está cargado.
 - Referencia de comportamiento: `conciliacion-demo.html` (`runReconciliation`, `loadSources({ preserveResult: true })`, toast ante fallo del refresco). No se modifica.
