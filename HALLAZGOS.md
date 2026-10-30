@@ -1,102 +1,26 @@
 # Hallazgos
 
-Discovery de `auth/` basado en lectura estática. H-AUTH-01, H-AUTH-02 y
-H-AUTH-07 se actualizaron después de su implementación local y pruebas;
-H-AUTH-03 a H-AUTH-06 siguen pendientes. No se realizó una revisión de
-advisories.
+Evidencias del componente `web/` (reto de conciliación de operaciones, Issues #30 a #34). Todas se
+comprobaron en esta rama (`day5/reto`) con los comandos de [docs/TESTING.md](docs/TESTING.md). Los estados
+son `Resuelto`, `Pendiente` o `No encontrado`; lo que no se ejecutó figura como `Pendiente`.
 
-## auth
+**Secciones de otros componentes.** Las filas `H-AUTH-01` a `H-AUTH-11` existían en este archivo hasta el
+commit `19e1060` ("reto 30/10"), que lo eliminó junto con `auth/` y `api/`. No se reescriben aquí porque
+sus archivos ya no están en el árbol; se recuperan con `git show 19e1060^:HALLAZGOS.md`.
+
+## web
 
 | id | componente | hallazgo | tipo | explicacion | evidencia (archivo:linea) | severidad | estado |
 |---|---|---|---|---|---|---|---|
-| H-AUTH-01 | auth | Credenciales concatenadas en SQL | Vulnerabilidad | `username` y `password` se insertaban directamente en la sentencia, permitiendo alterar la consulta de autenticación. | `auth/src/main/java/com/bcp/workshop/auth/AuthResource.java:31`; `auth/src/main/java/com/bcp/workshop/auth/UserRepository.java:28,50-55` | alta | Resuelto — la búsqueda usa SQL fijo y enlaza el username con `PreparedStatement`; la contraseña se verifica fuera de SQL. |
-| H-AUTH-02 | auth | Contraseñas almacenadas y comparadas en texto plano | Vulnerabilidad | El esquema guardaba contraseñas legibles; una exposición de la base podía revelar las credenciales. | `auth/src/main/java/com/bcp/workshop/auth/UserRepository.java:21-47,77-129`; `auth/src/main/java/com/bcp/workshop/auth/PasswordHasher.java:11-86` | alta | Resuelto — se almacenan hashes PBKDF2-HMAC-SHA256 con salt aleatorio y se migran filas legacy de forma idempotente. |
-| H-AUTH-03 | auth | Token codificado en Base64 con secreto embebido, sin firma criptográfica | Vulnerabilidad | El contenido, incluido el secreto fijo, solo se codifica con Base64; el formato no autentica su integridad y la expiración incluida es un dato, no una verificación demostrada. | `auth/src/main/java/com/bcp/workshop/auth/LegacyTokenUtil.java:8,13-15`; `auth/src/main/java/com/bcp/workshop/auth/AuthResource.java:40-42` | alta | Pendiente |
-| H-AUTH-04 | auth | Respuesta de error expone detalles de excepción | Vulnerabilidad | En errores internos, la respuesta HTTP 500 incluye el mensaje y la clase de excepción, lo que puede revelar información de implementación o persistencia al cliente. | `auth/src/main/java/com/bcp/workshop/auth/AuthResource.java:54-58` | media | Pendiente |
-| H-AUTH-05 | auth | Secreto codificado en clase y CORS con origen permisivo | Vulnerabilidad | El secreto está fijado en código y CORS está habilitado con una expresión de origen que admite cualquier origen; esto deja la configuración sensible sin externalizar y permite solicitudes cross-origin desde sitios no restringidos por origen. | `auth/src/main/java/com/bcp/workshop/auth/LegacyTokenUtil.java:8`; `auth/src/main/resources/application.properties:4-7` | media | Aprobado |
-| H-AUTH-06 | auth | Versiones de dependencias requieren revisión SCA | Sugerencia | El proyecto fija Quarkus `3.27.4` y Commons Text `1.9`. La presencia de esas versiones está comprobada, pero sin consultar advisories no se confirma si hay vulnerabilidades aplicables ni su impacto. | `auth/pom.xml:13,48-50` | baja | Pendiente |
-| H-AUTH-07 | auth | El recurso concentra validación, persistencia, token y respuesta HTTP | Refactor | `login` validaba entradas, invocaba directamente la base, decidía la autenticación, generaba el token y construía la respuesta; esto acoplaba responsabilidades y dificultaba probarlas o cambiarlas de forma aislada. | `auth/src/main/java/com/bcp/workshop/auth/AuthResource.java:23-68`; `auth/src/main/java/com/bcp/workshop/auth/AuthenticationService.java:10-35`; `auth/src/main/java/com/bcp/workshop/auth/UserRepository.java:19-67`; `auth/src/main/java/com/bcp/workshop/auth/LoginResponse.java:3-4` | baja | Resuelto — la frontera HTTP delega la autenticación al servicio; el repositorio persiste y la respuesta usa DTOs separados del modelo `UserRecord`. |
-| H-AUTH-08 | auth | Cuentas de taller se crean automáticamente al inicializar la base | Vulnerabilidad | La inicialización crea cuentas con credenciales fijas si no existen; si se ejecuta en un despliegue no aislado sin reemplazarlas, podrían permitir acceso no autorizado. | `auth/src/main/java/com/bcp/workshop/auth/UserRepository.java:30-32,45-52,112-116` | media | CANDIDATO — confirmar si el componente se despliega fuera del entorno de taller y cómo se controlan esas cuentas. |
-| H-AUTH-09 | auth | Fallos SQL durante el login se convierten en credenciales inválidas | Estabilidad | El repositorio imprime la excepción SQL y devuelve `null`; el servicio y el recurso convierten ese resultado en `401`, confundiendo una falla de persistencia con credenciales inválidas y dificultando el diagnóstico. | `auth/src/main/java/com/bcp/workshop/auth/UserRepository.java:59-76`; `auth/src/main/java/com/bcp/workshop/auth/AuthenticationService.java:17-20`; `auth/src/main/java/com/bcp/workshop/auth/AuthResource.java:30-33` | media | CANDIDATO |
-| H-AUTH-10 | auth | El flujo de login no limita intentos repetidos dentro del componente | Seguridad | Cada solicitud válida estructuralmente llega a la consulta y verificación de contraseña sin control local de frecuencia; protecciones externas al componente no fueron verificadas. | `auth/src/main/java/com/bcp/workshop/auth/AuthResource.java:22-36`; `auth/src/main/java/com/bcp/workshop/auth/AuthenticationService.java:17-20`; `auth/src/main/java/com/bcp/workshop/auth/UserRepository.java:59-65` | media | CANDIDATO — confirmar si existe limitación en la capa de despliegue. |
-| H-AUTH-11 | auth | La readiness de producción no comprueba la base de autenticación | Operación | No se encontró un readiness check de producción ligado a la base; una falla de base después del arranque podría dejar el servicio reportándose saludable mientras el login falla. | `auth/src/main/java/com/bcp/workshop/auth/UserRepository.java:59-76`; `auth/src/test/java/com/bcp/workshop/auth/HealthEndpointTest.java:14-22,35-46`; `auth/src/test/java/com/bcp/workshop/auth/TestReadinessCheck.java:9-20` | baja | CANDIDATO — comprobar el comportamiento en ejecución y las comprobaciones del despliegue. |
-
-## Contrato observado de `POST /auth/login`
-
-No se encontró `docs/ENDPOINTS.md`; por eso, lo siguiente se deriva del código y
-es un contrato **observado**, no un contrato acordado:
-
-- Ruta `POST /auth/login`, con request y response JSON.
-- El request contiene los campos `username` y `password`; `client` también está
-  declarado en el DTO. El recurso responde `400` cuando el cuerpo es nulo o
-  falta username o password.
-- La base usa `AUTH_DB_URL` si está definida y, de lo contrario,
-  `jdbc:sqlite:./data/workshop.db`. Al inicializar crea la tabla `legacy_users`,
-  migra contraseñas legadas y agrega cuentas ficticias `student` y `trainer`
-  con hashes si no existen. `UserRepository` enlaza username como parámetro y
-  verifica la contraseña contra el hash almacenado.
-- Si no encuentra usuario, responde `401` con un mensaje que incluye el
-  username recibido.
-- Si autentica, responde `200` con `token`, `expiresIn` y `user` (`username`,
-  `displayName`, `role`), además del campo `debug`.
-- El token codifica en Base64 username, rol, expiración y el secreto fijo; el
-  código leído no lo firma.
-- Si ocurre una excepción en el recurso, responde `500` con `message` y
-  `exception`.
-
-Evidencia: `auth/src/main/java/com/bcp/workshop/auth/AuthResource.java:14-68`;
-campos del request en `auth/src/main/java/com/bcp/workshop/auth/LoginRequest.java:3-6`;
-servicio y DTOs en `auth/src/main/java/com/bcp/workshop/auth/AuthenticationService.java:10-35`
-y `auth/src/main/java/com/bcp/workshop/auth/LoginResponse.java:3-4`;
-inicialización y consulta en `auth/src/main/java/com/bcp/workshop/auth/UserRepository.java:19-129`;
-hash y verificación de contraseña en `auth/src/main/java/com/bcp/workshop/auth/PasswordHasher.java:11-86`;
-creación de token en `auth/src/main/java/com/bcp/workshop/auth/LegacyTokenUtil.java:8-15`.
-
-## Pruebas
-
-La suite de auth cubre login válido/inválido, campos requeridos, el manejo 500
-observado, usuario con comilla, SQL parametrizado, hashing, migración idempotente
-y servicio de autenticación.
-`auth/src/test/java/com/bcp/workshop/auth/AuthResourceTest.java:15`;
-`auth/src/test/java/com/bcp/workshop/auth/UserRepositoryTest.java:29`;
-`auth/src/test/java/com/bcp/workshop/auth/AuthenticationServiceTest.java:12`;
-`auth/src/test/java/com/bcp/workshop/auth/PasswordHasherTest.java:10`.
-Resultado final: `mvn verify` desde `auth/`, con DB SQLite aislada,
-16 pruebas aprobadas; cobertura de líneas `AuthResource` 26/26 (100%),
-`AuthenticationService` 11/11 (100%), `UserRepository` 61/65 (93,8%) y
-`PasswordHasher` 37/39 (94,9%). Ejecuciones por ID: `PLAN.md`, sección
-«Ejecuciones de implementación (auth)».
-
-## Candidatos nuevos de auth — requieren revisión humana
-
-### H-AUTH-08 — Cuentas de taller creadas durante la inicialización
-- Estado: CANDIDATO
-- Evidencia: `auth/src/main/java/com/bcp/workshop/auth/UserRepository.java:30-32,45-52,112-116`.
-- Impacto: si el servicio se despliega en un entorno no aislado, las cuentas creadas con credenciales fijas podrían permitir acceso no autorizado si no se sustituyen o deshabilitan. El uso de producción no está confirmado.
-- Prioridad propuesta: media.
-- Contrato potencialmente afectado: `POST /auth/login` y la inicialización de la base de autenticación.
-- Cómo validarlo: iniciar el perfil de despliegue previsto contra una base aislada vacía y verificar si las cuentas de taller se crean y pueden autenticarse; confirmar con el responsable del despliegue si ese comportamiento está permitido.
-
-### H-AUTH-09 — Fallos de persistencia reportados como credenciales inválidas
-- Estado: CANDIDATO
-- Evidencia: `auth/src/main/java/com/bcp/workshop/auth/UserRepository.java:59-76`; `auth/src/main/java/com/bcp/workshop/auth/AuthenticationService.java:17-20`; `auth/src/main/java/com/bcp/workshop/auth/AuthResource.java:30-33`.
-- Impacto: una falla SQL durante la consulta se representa como `401` en lugar de distinguir un error de servicio; el stack trace también se escribe directamente con `printStackTrace`.
-- Prioridad propuesta: media.
-- Contrato potencialmente afectado: estados y respuesta de error de `POST /auth/login`.
-- Cómo validarlo: con una base o controlador JDBC de prueba que provoque `SQLException`, comprobar el estado y cuerpo HTTP resultantes y dónde queda registrada la falla.
-
-### H-AUTH-10 — Sin limitación local de intentos de login
-- Estado: CANDIDATO
-- Evidencia: `auth/src/main/java/com/bcp/workshop/auth/AuthResource.java:22-36`; `auth/src/main/java/com/bcp/workshop/auth/AuthenticationService.java:17-20`; `auth/src/main/java/com/bcp/workshop/auth/UserRepository.java:59-65`.
-- Impacto: el flujo de auth no controla la frecuencia de intentos, lo que podría facilitar intentos repetidos y elevar el costo de procesamiento. No se verificaron protecciones externas.
-- Prioridad propuesta: media.
-- Contrato potencialmente afectado: disponibilidad y comportamiento ante solicitudes repetidas de `POST /auth/login`.
-- Cómo validarlo: ejecutar pruebas de solicitudes repetidas en un entorno aislado y verificar si el servicio o la infraestructura limita la frecuencia; revisar la configuración de despliegue con el equipo responsable.
-
-### H-AUTH-11 — Readiness no vinculada a la disponibilidad de la base
-- Estado: CANDIDATO
-- Evidencia: `auth/src/main/java/com/bcp/workshop/auth/UserRepository.java:59-76`; `auth/src/test/java/com/bcp/workshop/auth/HealthEndpointTest.java:14-22,35-46`; `auth/src/test/java/com/bcp/workshop/auth/TestReadinessCheck.java:9-20`.
-- Impacto: una falla de base después del arranque podría no reflejarse en la readiness, aunque las solicitudes de login ya no puedan consultar usuarios. La prueba de readiness disponible usa un check de test.
-- Prioridad propuesta: baja.
-- Contrato potencialmente afectado: `GET /q/health` y la disponibilidad operativa de `POST /auth/login`.
-- Cómo validarlo: en una ejecución de producción aislada, simular que la base deja de estar disponible después del arranque y comparar la respuesta de health con el resultado del login.
+| H-WEB-01 | web | La web no tenía código fuente | Calidad | `web/` traía configuración y `node_modules`, pero no `src/`. `npm test` terminaba con "No test files found" y `npm run build` fallaba por `src/styles.css`. | `web/angular.json:10,18`; `web/package.json:8` | alta | Resuelto — `web/src/` creado a mano con `ng build` y `vitest` correctos; `python tools/lab.py test web`: 122 pruebas, 98,05 % de cobertura y build correcto. |
+| H-WEB-02 | web | La base URL del contrato no apunta a ningún servicio | Funcional | El OpenAPI declara `http://127.0.0.1:8787`, donde no escucha nada. La demo usa el mock remoto del grupo 3, que responde 200 en las cuatro lecturas y permite CORS (`OPTIONS /reconciliations` → 204, `GET, POST, OPTIONS`). | `docs/ENDPOINTS.md:9`; `conciliacion-demo.html:217`; `web/src/app/core/config.ts:1-3` | media | Resuelto — constante única `API_BASE_URL` con el mock remoto del grupo 3. |
+| H-WEB-03 | web | Solo `GET /payments` depende de la wallet | Funcional | Settlements (33), ledger (58) e incidencias (9) son del grupo. Al cambiar de wallet la lista seguía mostrando casi lo mismo, marcado como "Falta: Wallet". | `docs/ENDPOINTS.md:894-961,2070,2200,2265`; `web/src/app/operations/operations.view-model.ts:64` | media | Resuelto — `scopeToWallet` acota la lista a la wallet consultada y un interruptor incluye las referencias del grupo sin pago en ella. Pruebas en `operations.view-model.spec.ts` y `operations-list.component.spec.ts`. |
+| H-WEB-04 | web | Una carga parcial podía presentarse como completa | Funcional | La demo carga las cuatro fuentes con `Promise.all` y un único error. La web guarda estado y fecha por fuente y solo confirma los datos si las cuatro responden. | `conciliacion-demo.html:654-659`; `web/src/app/sources/sources.service.ts:88` | media | Resuelto — prueba "si falla una fuente, no marca el conjunto como cargado ni expone datos parciales" en `sources.service.spec.ts`. |
+| H-WEB-05 | web | Una ejecución exitosa con refresco fallido parecía una conciliación fallida | Funcional | Si `POST /reconciliations` responde bien y la recarga posterior falla, la demo limpia las fuentes y muestra solo un aviso. La web conserva el resultado, informa por separado el fallo del refresco y bloquea una nueva conciliación hasta recargar. | `conciliacion-demo.html:689-705`; `web/src/app/execution/execution.service.ts:34` | media | Resuelto — prueba "POST exitoso con refresco fallido conserva el resultado y bloquea hasta actualizar". |
+| H-WEB-06 | web | `strict: false` deja pasar errores de tipos en las pruebas | Calidad | Vitest no comprueba tipos. Dos estrechamientos de unión (`TS2339`) pasaron las pruebas y solo los detectó `ng build`. | `web/tsconfig.json:7`; `web/src/app/provider-control/scenario-panel.component.ts:110`; `web/src/app/tracking/incident-tracking.component.ts:126` | baja | Resuelto en los dos puntos con `'error' in resultado`. Riesgo residual: el `build` es el único control de tipos; no se activó `strict` para no cambiar la configuración base. |
+| H-WEB-07 | web | Una wallet creada por KYC no se puede fondear | Limitación del contrato | `POST /kyc/verifications` crea la wallet con saldo 0 y `POST /payments` responde `409 INSUFFICIENT_FUNDS`. No existe endpoint de fondeo; solo `wallet-demo` empieza con 100000. | `docs/ENDPOINTS.md:199,308-310,565-647,829,894` | media | No encontrado — el contrato no ofrece fondeo. Los datos de la demo se crean en `wallet-demo` ([docs/DEMO.md](docs/DEMO.md)). |
+| H-WEB-08 | web | `/auth/login` y `/api/tasks` no existen en `web/src` | Alcance | `AGENTS.md` pide conservarlos, pero los cinco changes no los usan y `auth/` y `api/` se eliminaron en `19e1060`. | `AGENTS.md:65`; `AGENTS.md:14` | media | Pendiente — fuera del alcance de los Issues #30 a #34. |
+| H-WEB-09 | web | No hay verificación en navegador ni pruebas end-to-end | Calidad | Las 122 pruebas usan `jsdom` y HTTP simulado. La integración con el mock real se comprobó con lecturas puntuales (una prueba temporal ya eliminada) y llamadas manuales; la interfaz no se vio en un navegador. | `web/vitest.config.ts:5`; `web/package.json:31` | media | Pendiente — ensayar el flujo completo en navegador antes de la demostración. |
+| H-WEB-10 | web | Las escrituras de la demo modifican un grupo compartido | Operación | `POST /reconciliations`, `/control/settlements` y `POST /payments` cambian el grupo 3 para quien lo use. Solo `POST /control/reset` lo restablece y borra todo. | `docs/ENDPOINTS.md:2603,2757,2858` | media | Pendiente — mitigación: documentar los datos creados y no ejecutar `reset` sin acuerdo. |
+| H-WEB-11 | web | `compose.yaml` referencia carpetas inexistentes | Operación | Construye `./auth` y `./api`, eliminados en `19e1060`; `docker compose up` no puede arrancar el conjunto. `web/` se ejecuta con `npm start`. | `compose.yaml:4,8,21` | media | Pendiente. |
+| H-WEB-12 | web | Dependabot propone saltos mayores en `web/` sin evaluar | Sugerencia | PR #19 (`@angular/router` 22.2.3), #18 (`@vitest/coverage-v8` 5.0.5) y #16 (`typescript` 7.0.2) siguen abiertos. No se revisaron advisories ni compatibilidad. | PR #16, #18 y #19 en `user-bcp-studentntt28/ai-labs` | baja | Pendiente. |

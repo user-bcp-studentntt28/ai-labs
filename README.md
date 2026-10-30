@@ -4,6 +4,30 @@ Un producto de práctica con autenticación Java/Quarkus en auth/, API Python/Fa
 
 El código incluye defectos deliberados. Trabaja con datos ficticios, en localhost. Las tres plantillas originales se conservan sin cambios. Crea tu propio repositorio con Use this template en GitHub y luego clónalo dentro de tu carpeta del curso, con el nombre local ai-labs.
 
+## Reto: conciliación de operaciones (web)
+
+En la rama `day5/reto`, `web/` es una aplicación Angular de conciliación de operaciones (Issues #30 a #34). Consume el mock del grupo 3 definido en `docs/ENDPOINTS.md`; no necesita `auth/` ni `api/`, que se eliminaron del árbol en el commit `19e1060`, por lo que `docker compose` no arranca el conjunto.
+
+```bash
+cd web
+npm install
+npm start                       # http://localhost:4200
+```
+
+```bash
+python tools/lab.py test web    # desde la raíz: pruebas, cobertura y build
+```
+
+| Documento | Contenido |
+|---|---|
+| `docs/ARQUITECTURA.md` | Capas, flujo de datos, decisiones, contratos y trazabilidad Issue → OpenSpec → código |
+| `docs/TESTING.md` | Casos, comandos, resultados, cobertura, mocks y limitaciones |
+| `docs/DEMO.md` | Datos sintéticos, qué es real y simulado, herramientas y guion de 6 minutos |
+| `HALLAZGOS.md` | Evidencias `H-WEB-01` a `H-WEB-12` |
+| `openspec/changes/hu-conc-0N-*/` | `proposal.md`, specs, `design.md` y `tasks.md` de cada Issue |
+
+`conciliacion-demo.html` es la demo original en HTML y se conserva solo como referencia.
+
 ## Crear tu copia desde el template
 
 1. Abre https://github.com/NTTData-Academy/ai-labs y elige Use this template → Create a new repository.

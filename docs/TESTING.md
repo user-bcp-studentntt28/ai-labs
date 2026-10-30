@@ -1,143 +1,90 @@
-# Pruebas de contratos — auth
+# Pruebas de `web/`
 
-## Matriz por endpoint
+Componente Angular de conciliación de operaciones (Issues #30 a #34). Resultados obtenidos en esta rama
+(`day5/reto`) con Node 26.9.0, npm 11.19.1 y Python 3.13.15.
 
-| endpoint | caso | tipo | resultado esperado |
+## Comandos
+
+Desde la raíz:
+
+```bash
+python tools/lab.py test web
+```
+
+Ejecuta, dentro de `web/`, `npm test`, `npm run test:coverage` y `npm run build`. También puedes correrlos
+por separado desde `web/`: `npm test`, `npm run test:coverage`, `npm run build`. Para una sola carpeta:
+`npx vitest run src/app/operations`.
+
+## Resultado
+
+| Control | Resultado |
+|---|---|
+| Archivos de prueba | 15 de 15 pasan |
+| Pruebas | 122 de 122 pasan |
+| `npm run build` | Correcto; bundle inicial de 246,12 kB (limite de aviso 500 kB) |
+| `openspec validate` de los cinco changes | Válido |
+
+## Cobertura
+
+Método: `@vitest/coverage-v8`, sobre `src/app/**/*.ts` sin los `*.spec.ts`. Es cobertura de todo el código de
+`web/src/app`, que es código nuevo de esta rama, por lo que equivale a la cobertura del código modificado.
+Fuente: `web/coverage/coverage-summary.json` (la carpeta está ignorada por Git).
+
+| Métrica | Cubierto / total | Porcentaje |
+|---|---|---|
+| Sentencias | 907 / 925 | 98,05 % |
+| Ramas | 321 / 341 | 94,13 % |
+| Funciones | 89 / 92 | 96,73 % |
+| Líneas | 907 / 925 | 98,05 % |
+
+La meta del laboratorio es 85 %. Sin cubrir: `app.config.ts` y `models.ts` (0 %, solo configuración y tipos),
+`main.ts` (no está en `src/app`; lo cubre el build) y ramas de error poco frecuentes en `api-errors.ts`,
+`labels.ts` y `workflow-storage.service.ts`. No se cambió ningún umbral.
+
+## Casos por historia
+
+Cada caso nombra el escenario del spec que cubre.
+
+| Historia | Archivo | Pruebas | Casos válidos, borde y error |
 |---|---|---|---|
-| `GET /q/health` | Estado saludable | Camino feliz | `200`; JSON con `status: "UP"` y un check de readiness en estado `UP` en el entorno de test. |
-| `GET /q/health` | GET sin body ni `Authorization` | Borde | `200`; el endpoint público no requiere credenciales ni request body. |
-| `GET /q/health` | Check de readiness de test en estado no saludable | Error documentado `503` | `503`; JSON con `status: "DOWN"` y el check `test-readiness` en `DOWN`. El check existe solo en pruebas. |
-| `POST /auth/login` | Credenciales ficticias válidas y campo opcional `client` | Camino feliz | `200`; `token` no nulo, `expiresIn: 3600`, usuario `student` y etiqueta `debug` legacy. |
-| `POST /auth/login` | Username con comilla tratado como dato | Borde | `401`; no autentica y conserva el mensaje para el username recibido. |
-| `POST /auth/login` | Username o password con espacios | Borde | `400`; mensaje `Username is required` o `Password is required`, respectivamente. |
-| `POST /auth/login` | Cuerpo JSON `null` | Error documentado `400` | `{"message":"Request is null"}`. |
-| `POST /auth/login` | Campo `username` ausente | Error documentado `400` | `{"message":"Username is required"}`. |
-| `POST /auth/login` | Campo `password` ausente | Error documentado `400` | `{"message":"Password is required"}`. |
-| `POST /auth/login` | Credenciales incorrectas | Error documentado `401` | `{"message":"Invalid user student or password"}`. |
-| `POST /auth/login` | Fallo ficticio del servicio de autenticación | Error documentado `500` | `message` y `exception` reflejan la excepción de test, conforme al contrato actual. |
+| #33 Fuentes | `sources/sources.service.spec.ts` | 10 | Cuatro lecturas con `walletId` por defecto; wallet indicada; `[]` válido; una fuente falla (sin datos parciales); respuesta que no es lista; error de red (CORS); bloqueo sin cargar; actualización con fecha solo de las exitosas; segunda carga ignorada. |
+| | `sources/sources-panel.component.spec.ts` | 4 | Wallet por defecto; estado y fecha por fuente; error por fuente; wallet escrita. |
+| | `core/money.spec.ts` | 2 | `1500` → `S/ 15.00`; `0` y `1`. |
+| #31 Ejecución | `execution/execution.service.spec.ts` | 8 | POST sin cuerpo; sin fuentes no envía; `MATCHED` y `DIFFERENCES`; forma inválida; POST falla; ejecución exitosa con refresco fallido; repetir conserva IDs; sin otras escrituras. |
+| | `execution/execution-panel.component.spec.ts` | 5 | Botón deshabilitado y explicación; métricas; resultado con cantidad; fallos separados; "no se ejecutó". |
+| #32 Revisión | `operations/operations.view-model.spec.ts` | 18 | Agrupación por referencia; fuente faltante; `BALANCE_MISMATCH` a nivel de wallet; "Sin ejecutar" y "Conciliada"; búsqueda por referencia, motivo e ID de incidencia; filtros por estado y motivo; alcance por wallet. |
+| | `operations/operations-list.component.spec.ts` | 10 | Lista y sección "Saldo de wallet"; aviso e interruptor del grupo; wallet sin pagos; filtros; detalle con estados y motivos; recargar y nueva conciliación desde el detalle. |
+| #34 Seguimiento | `tracking/workflow.spec.ts` | 12 | Cuatro transiciones válidas; rechazos por estado, rol y nota vacía o solo espacios; historial; acciones por rol. |
+| | `tracking/tracking.service.spec.ts` | 10 | Persistencia y recarga; clave `conciliacion:workflow:<grupo>:<wallet>`; separación por wallet; rol sin credenciales; almacenamiento no disponible; escritura fallida; registro y documento dañados; sin HTTP. |
+| | `tracking/workflow-storage.service.spec.ts` | 4 | Sin storage; storage que lanza excepciones; guardar y recuperar; versión o forma inválida. |
+| | `tracking/incident-tracking.component.spec.ts` | 6 | Estado local y del API a la vez; recorrido del analista; aprobar sin nota; cierre local con aviso de API sin cambios; devolver y reiniciar; sin almacenamiento. |
+| #30 Escenarios | `provider-control/validation.spec.ts` | 15 | `amountCents` 1 y 49999 válidos; `0`, `-5`, `50000`, `100000000`, `12.5`, `abc` y vacío rechazados; `ORPHAN` con ID nuevo. |
+| | `provider-control/provider-control.service.spec.ts` | 10 | Cuerpo por modo; `400 INVALID_MODE`, `404`, `409 PROVIDER_ALREADY_EXISTS`, red; `CLEAR` neutral; respuesta sin `configured`; solo `/control/settlements`. |
+| | `provider-control/scenario-panel.component.spec.ts` | 5 | Lista de pagos; monto fuera de rango no se envía; mensaje de alcance; `MISSING` sin monto; `ORPHAN` y 409. |
+| Integración | `app.component.spec.ts` | 3 | Paneles del shell sin consulta inicial; selector de rol; flujo cargar → conciliar → detalle. |
 
-Los tests de auth no caracterizan errores del parser JSON anteriores al recurso;
-`docs/ENDPOINTS.md` los deja como pregunta abierta. No se inventa un resultado
-esperado para ellos. El check de readiness que permite verificar `503` y el
-servicio alternativo que permite verificar `500` son fixtures de test, no
-configuración de producción.
+## Mocks y datos
 
-## Código de los tests
+- **HTTP:** `HttpTestingController`. Cada prueba verifica URL, método, cuerpo y parámetros, y entrega la
+  respuesta (200, 404, 409, 500 o error de red). Ninguna prueba sale a la red.
+- **`localStorage`:** un `Storage` falso en memoria detrás del token `WORKFLOW_STORAGE`, con variantes que
+  fallan al escribir, no están disponibles o lanzan excepciones.
+- **Datos:** fixtures manuales en `web/src/app/testing/fixtures.ts` y ayudas en `testing/http-helpers.ts`.
+  Sus formas coinciden con las respuestas reales del mock (campos `amount`, `wallet_id`, `payment_id`).
+- **Entorno:** `jsdom` global en `web/vitest.config.ts`; el setup (`src/test-setup.ts`) importa
+  `@angular/compiler` e inicializa TestBed, que es *zoneless* por defecto en Angular 21.
 
-El código completo y ejecutable está en las clases enlazadas. Fragmentos
-representativos de las comprobaciones HTTP:
+## Verificación contra el mock real
 
-### `GET /q/health`
+No forma parte de la suite. Se hizo aparte y de forma manual:
 
-`HealthEndpointTest`:
+- Lectura de las cuatro fuentes con el `SourcesService` real: 21 pagos, 22 settlements, 44 asientos y 4
+  incidencias en ese momento (prueba temporal, eliminada).
+- Escrituras con PowerShell sobre `wallet-demo`: ver [docs/DEMO.md](DEMO.md).
 
-```java
-given()
-        .accept("application/json")
-        .when().get("/q/health")
-        .then()
-        .statusCode(200)
-        .body("status", is("UP"));
-```
+## Limitaciones
 
-El caso `503` activa el check solamente durante la petición y limpia la
-propiedad en `finally`:
-
-```java
-System.setProperty(FORCE_HEALTH_DOWN_PROPERTY, "true");
-try {
-    given()
-            .accept("application/json")
-            .when().get("/q/health")
-            .then()
-            .statusCode(503)
-            .body("status", is("DOWN"))
-            .body("checks[0].name", is(TestReadinessCheck.CHECK_NAME))
-            .body("checks[0].status", is("DOWN"));
-} finally {
-    System.clearProperty(FORCE_HEALTH_DOWN_PROPERTY);
-}
-```
-
-Fuentes: [`HealthEndpointTest.java`](../auth/src/test/java/com/bcp/workshop/auth/HealthEndpointTest.java)
-y [`TestReadinessCheck.java`](../auth/src/test/java/com/bcp/workshop/auth/TestReadinessCheck.java).
-
-### `POST /auth/login`
-
-Camino feliz y errores HTTP, en [`AuthResourceTest.java`](../auth/src/test/java/com/bcp/workshop/auth/AuthResourceTest.java):
-
-```java
-given()
-        .contentType("application/json")
-        .body("{\"username\":\"student\",\"password\":\"Workshop123!\",\"client\":\"angular-workshop\"}")
-        .when().post("/auth/login")
-        .then()
-        .statusCode(200)
-        .body("user.username", is("student"))
-        .body("expiresIn", is(3600))
-        .body("token", notNullValue());
-```
-
-La misma clase cubre cuerpo nulo, cada campo requerido ausente, credenciales
-inválidas y la respuesta `500` a través de HTTP. El fallo es controlado por la
-alternativa exclusiva de test
-[`TestAuthenticationService.java`](../auth/src/test/java/com/bcp/workshop/auth/TestAuthenticationService.java).
-
-## Ejecuciones y cobertura
-
-Componente: **auth**. Las ejecuciones se realizaron desde `auth/`. Los tests
-del repositorio usan explícitamente una base SQLite aislada dentro de
-`auth/target/`, sin depender de que `AUTH_DB_URL` esté definida.
-
-| Componente / IDs | Comando | Directorio | Código de salida | Resultado |
-|---|---|---|---:|---|
-| auth — contratos `GET /q/health` y `POST /auth/login` | `$env:AUTH_DB_URL='jdbc:sqlite:./target/auth-endpoints-test.db'; mvn '-Dtest=AuthResourceTest,HealthEndpointTest' test` | `auth/` | 0 | BUILD SUCCESS; 11 pruebas aprobadas, 0 fallidas. |
-| auth — regresión completa antes de independizar la URL del test | `$env:AUTH_DB_URL='jdbc:sqlite:./target/auth-endpoints-final.db'; mvn verify` | `auth/` | 0 | BUILD SUCCESS; 19 pruebas aprobadas, 0 fallidas, 0 omitidas. JaCoCo generó el reporte en `auth/target/site/jacoco/index.html`. |
-| auth — H-AUTH-02, reproducción del fallo local | `mvn '-Dtest=UserRepositoryTest' test` con `AUTH_DB_URL` sin definir | `auth/` | 1 | BUILD FAILURE; 4 pruebas, 2 errores por `no such table: legacy_users`, 0 fallidas. |
-| auth — suite completa tras corregir la URL de test | `mvn verify` con `AUTH_DB_URL` sin definir | `auth/` | 0 | BUILD SUCCESS; 19 pruebas aprobadas, 0 fallidas, 0 omitidas. JaCoCo generó el reporte en `auth/target/site/jacoco/index.html`. |
-
-Método de cobertura: JaCoCo 0.8.12 instrumenta la ejecución de `mvn verify`;
-se leyeron los contadores `LINE` por clase del XML
-`auth/target/site/jacoco/jacoco.xml`. Cobertura de líneas en clases de auth:
-
-| clase | líneas cubiertas / totales | cobertura |
-|---|---:|---:|
-| `AuthResource` | 26 / 26 | 100% |
-| `AuthenticationService` | 11 / 11 | 100% |
-| `UserRepository` | 64 / 68 | 94,1% |
-| `PasswordHasher` | 37 / 39 | 94,9% |
-
-La métrica cubre código de producción, no cuenta líneas de los tests Java. La
-clase `HealthEndpointTest` valida la extensión SmallRye Health; JaCoCo no
-atribuye su implementación externa a las clases de auth.
-
-## Fallos, pendientes y pruebas propuestas
-
-- **Fallos:** la reproducción previa a la corrección del harness falló como se
-  describe en la tabla. La ejecución completa posterior pasó.
-- **Corrección de harness:** `UserRepositoryTest` originalmente abría
-  `target/auth-characterization.db` para preparar/leer fixtures, mientras que
-  `UserRepository` inicializaba `data/workshop.db` cuando no existía
-  `AUTH_DB_URL`. Reproducido con `mvn '-Dtest=UserRepositoryTest' test` sin esa
-  variable: 2 errores por `no such table: legacy_users`. El repositorio ahora
-  admite una URL de construcción package-private y las pruebas pasan la URL
-  aislada explícitamente. Confirmado con el `mvn verify` completo posterior,
-  también sin definir `AUTH_DB_URL`.
-- **Pendiente:** no se probaron errores de JSON malformado ni de `Content-Type`
-  incompatible porque el contrato los deja sin especificar y son manejados por
-  Quarkus REST/Jackson.
-- **Pruebas propuestas:** si auth registra checks de salud propios en el
-  futuro, agregar casos de esos checks y actualizar `docs/ENDPOINTS.md` con
-  sus estados y cuerpos verificados.
-
-## Documentos consultados
-
-- `README.md` — dirección local del servicio, credenciales ficticias y comando
-  de pruebas documentado.
-- `RETO.md` — inventario de candidatos auth; no se tomó como contrato.
-- `docs/GOOD_PRACTICES.md` — referencias de pruebas y calidad para auth.
-- `docs/ENDPOINTS.md` — endpoints, campos y respuestas a cubrir.
-- Código y pruebas de `auth/`: `AuthResource`, `LoginRequest`,
-  `LoginResponse`, `AuthenticationService`, `UserRepository`,
-  `TestAuthenticationService`, `TestReadinessCheck`, `AuthResourceTest` y
-  `HealthEndpointTest`.
+- No hay pruebas end-to-end ni la interfaz se vio en un navegador (H-WEB-09 en [HALLAZGOS.md](../HALLAZGOS.md)).
+- Vitest no comprueba tipos; los errores de tipos los detecta `npm run build` porque `web/tsconfig.json`
+  tiene `strict: false` (H-WEB-06).
+- La cobertura es de líneas y ramas; no mide la calidad de las aserciones.
