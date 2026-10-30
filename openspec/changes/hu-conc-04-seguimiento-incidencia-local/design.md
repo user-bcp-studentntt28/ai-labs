@@ -42,7 +42,7 @@ Bajo `web/src/`, todos nuevos:
 |----|----------|---------------------------|--------|
 | D1 | Clave de almacenamiento con prefijo propio, grupo y wallet (`conciliacion:workflow:<grupo>:<wallet>`) | (a) Reutilizar la clave de la demo, que incluye origen y ruta | El origen cambia entre `ng serve` y otros despliegues, y la clave de la demo no incluye grupo. |
 | D2 | Usar los nombres de estado del spec como valores internos (`Sin atender`, `En atención`, `En revisión`, `Devuelta`, `Cerrada localmente`) | (b) Nombres internos de la demo con etiquetas traducidas | En Angular no hay datos heredados que migrar, así que no hay costo de compatibilidad. |
-| D3 | "Aprobar cierre local" y "Devolver" exigen observaciones no vacías; "Enviar a revisión" la permite opcional | (c) Exigir nota en tres transiciones, como la demo | Sigue el issue ("devolver con observaciones") y el spec. La demo exige tres; es un cambio de comportamiento documentado. |
+| D3 | "Enviar a revisión" (respuesta del analista), "Aprobar cierre local" y "Devolver" exigen nota no vacía; "Iniciar atención" no | (c) Dejar "Enviar a revisión" con nota opcional (decisión inicial, revertida en HU-CONC-06) | Sigue el issue ("devolver con observaciones") y el spec. La demo exige tres; es un cambio de comportamiento documentado. |
 
 | D4 | Si `localStorage` no está disponible o la escritura falla, la transición no se confirma y el estado no cambia | (d) Permitir la acción solo en memoria | Evita mostrar como guardado algo que se perderá al recargar. |
 | D5 | Un registro corrupto se descarta solo para esa incidencia, con aviso | (e) Deshabilitar todo el seguimiento, como la demo | Un dato dañado no debe bloquear las demás incidencias. |

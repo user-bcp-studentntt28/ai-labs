@@ -29,7 +29,7 @@ export const INITIAL_STATE: WorkflowState = 'Sin atender';
 
 export const WORKFLOW_ACTIONS: Record<WorkflowAction, ActionRule> = {
   start: { label: 'Iniciar atención', from: ['Sin atender', 'Devuelta'], to: 'En atención', role: 'ANALYST', noteRequired: false },
-  submit: { label: 'Enviar a revisión', from: ['En atención'], to: 'En revisión', role: 'ANALYST', noteRequired: false },
+  submit: { label: 'Enviar a revisión', from: ['En atención'], to: 'En revisión', role: 'ANALYST', noteRequired: true },
   approve: { label: 'Aprobar cierre local', from: ['En revisión'], to: 'Cerrada localmente', role: 'SUPERVISOR', noteRequired: true },
   return: { label: 'Devolver', from: ['En revisión'], to: 'Devuelta', role: 'SUPERVISOR', noteRequired: true }
 };

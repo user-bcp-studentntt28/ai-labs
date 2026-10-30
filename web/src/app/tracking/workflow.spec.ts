@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { Role } from '../core/models';
 import { WorkflowAction, WorkflowRecord, WorkflowState, applyTransition, availableActions, emptyRecord, isWorkflowRecord } from './workflow';
 
 const NOW = new Date('2026-10-30T12:00:00Z');
@@ -15,8 +16,8 @@ describe('applyTransition: transiciones válidas', () => {
     expect(result.ok && result.record.state).toBe('En atención');
   });
 
-  it('Enviar a revisión: En atención -> En revisión con nota opcional', () => {
-    const result = applyTransition(at('En atención'), 'submit', 'ANALYST', '', NOW);
+  it('Enviar a revisión: En atención -> En revisión con la respuesta del analista', () => {
+    const result = applyTransition(at('En atención'), 'submit', 'ANALYST', 'Importe corregido en el proveedor', NOW);
     expect(result.ok && result.record.state).toBe('En revisión');
   });
 
@@ -42,18 +43,19 @@ describe('applyTransition: transiciones válidas', () => {
 });
 
 describe('applyTransition: rechazos', () => {
-  it.each<[WorkflowAction, WorkflowState]>([
-    ['approve', 'En revisión'],
-    ['return', 'En revisión']
-  ])('%s rechaza nota vacía o de solo espacios y no cambia el registro', (action, state) => {
+  it.each<[WorkflowAction, WorkflowState, Role]>([
+    ['submit', 'En atención', 'ANALYST'],
+    ['approve', 'En revisión', 'SUPERVISOR'],
+    ['return', 'En revisión', 'SUPERVISOR']
+  ])('%s rechaza nota vacía o de solo espacios y no cambia el registro', (action, state, role) => {
     for (const note of ['', '   ']) {
-      const result = applyTransition(at(state), action, 'SUPERVISOR', note, NOW);
+      const result = applyTransition(at(state), action, role, note, NOW);
       expect(result.ok).toBe(false);
     }
   });
 
   it('rechaza transiciones desde un estado inválido', () => {
-    expect(applyTransition(emptyRecord(), 'submit', 'ANALYST', '', NOW).ok).toBe(false);
+    expect(applyTransition(emptyRecord(), 'submit', 'ANALYST', 'x', NOW).ok).toBe(false);
     expect(applyTransition(at('Cerrada localmente'), 'start', 'ANALYST', '', NOW).ok).toBe(false);
     expect(applyTransition(at('En atención'), 'approve', 'SUPERVISOR', 'x', NOW).ok).toBe(false);
   });
@@ -68,11 +70,11 @@ describe('historial y acciones disponibles', () => {
   it('cada transición agrega una entrada con rol, acción, fecha y nota', () => {
     const first = applyTransition(emptyRecord(), 'start', 'ANALYST', ' Revisando ', NOW);
     if (!first.ok) throw new Error('esperado ok');
-    const second = applyTransition(first.record, 'submit', 'ANALYST', '', NOW);
+    const second = applyTransition(first.record, 'submit', 'ANALYST', 'Listo para revisión', NOW);
     if (!second.ok) throw new Error('esperado ok');
     expect(second.record.history.map(entry => entry.action)).toEqual(['Iniciar atención', 'Enviar a revisión']);
     expect(second.record.history[0].note).toBe('Revisando');
-    expect(second.record.history[1].note).toBeUndefined();
+    expect(second.record.history[1].note).toBe('Listo para revisión');
   });
 
   it('lista las acciones según estado y rol', () => {
@@ -90,3 +92,4 @@ describe('historial y acciones disponibles', () => {
     expect(isWorkflowRecord(null)).toBe(false);
   });
 });
+

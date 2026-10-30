@@ -11,6 +11,20 @@ npm install        # solo la primera vez
 npm start          # http://localhost:4200
 ```
 
+### Agente supervisor (opcional)
+
+En otra terminal, para que el supervisor reciba un mensaje del problema cuando el analista cambia de estado:
+
+```powershell
+cd agent-supervisor
+.\.venv\Scripts\python -m uvicorn app.main:app --port 8100
+# Usa tu sesión de GitHub (gh auth login) o COPILOT_GITHUB_TOKEN; sin token el mensaje es un resumen automático sin IA
+```
+
+La instalación y las variables están en [../agent-supervisor/README.md](../agent-supervisor/README.md). Con la
+sesión de GitHub, el agente usa `claude-sonnet-5.5` mediante el SDK de GitHub Copilot (`AGENT_MODEL`). Sin el agente, la web sigue funcionando y avisa que no
+hubo mensaje.
+
 Desde la raíz: `python tools/lab.py test web` ejecuta pruebas, cobertura y build (ver [TESTING.md](TESTING.md)).
 La web consume el mock `https://bcp-wallet-mock.yefri.workers.dev/groups/3`; necesita conexión a Internet.
 `docker compose` no sirve en esta rama (H-WEB-11 en [../HALLAZGOS.md](../HALLAZGOS.md)).
@@ -70,6 +84,7 @@ compartido (H-WEB-10). `POST /control/reset` restablece el grupo y borra todos l
 | GitHub Issues (#30 a #34), consultados con el MCP `github-official` | Fuente del alcance | Un change OpenSpec por Issue |
 | OpenSpec (`openspec`, esquema `spec-driven`) y la skill `openspec-explore` | `proposal.md`, specs, `design.md` y `tasks.md` por change | Alcance verificable antes de programar |
 | Agente de Copilot en VS Code, con las reglas de `AGENTS.md` | Diseño, código y pruebas | Cambios pequeños, con trazabilidad |
+| CrewAI + SDK de GitHub Copilot, Claude Sonnet 5.5 (`agent-supervisor/`) | Mensaje al supervisor sobre el problema de cada incidencia | Menos fatiga: el supervisor lee un resumen en lugar de reconstruir el caso |
 | Vitest + TestBed + `jsdom` | Pruebas | Regresión rápida y sin red |
 | `python tools/lab.py test web`, `ng build` | Validación | Mismo comando que usa el laboratorio |
 
@@ -83,7 +98,7 @@ humana del PR.
 |---|---|
 | 0:00 a 0:45 | El problema: las operaciones pueden diferir entre wallet, proveedor y ledger. Los cinco Issues (#30 a #34). |
 | 0:45 a 1:45 | El método: Issue → OpenSpec (proposal, specs, design, tasks) → pruebas primero. Abrir un `tasks.md` marcado. |
-| 1:45 a 4:30 | La demo en http://localhost:4200: 1) "Cargar fuentes" de `wallet-demo`; 2) "Ejecutar conciliación" (`DIFFERENCES`, 9); 3) abrir un `AMOUNT_MISMATCH` y su detalle (wallet, proveedor, ledger); 4) seguimiento: Analista inicia y envía a revisión, Supervisor aprueba con nota y se ve que el API sigue `OPEN`; 5) un escenario del proveedor (por ejemplo `MISSING`) y volver a conciliar. |
+| 1:45 a 4:30 | La demo en http://localhost:4200: 1) "Cargar fuentes" de `wallet-demo`; 2) "Ejecutar conciliación" (`DIFFERENCES`, 9); 3) abrir un `AMOUNT_MISMATCH` y su detalle (wallet, proveedor, ledger); 4) seguimiento: Analista inicia la atención (el agente lee los pagos y deja el mensaje), escribe su respuesta (obligatoria) y envía a revisión; el Supervisor lee el mensaje del agente, aprueba con nota y se ve que el API sigue `OPEN`; 5) un escenario del proveedor (por ejemplo `MISSING`) y volver a conciliar. |
 | 4:30 a 5:15 | Decisiones: seguimiento solo local; lista acotada a la wallet; importes menores a S/ 500,00; fallos de ejecución y de refresco separados. |
 | 5:15 a 6:00 | Valor y límites: 122 pruebas y 98 % de cobertura; qué es mock; siguientes pasos (crear wallets y pagos desde la web, ensayo en navegador). |
 

@@ -2,6 +2,8 @@ import { ChangeDetectionStrategy, Component, Input, inject, signal } from '@angu
 import { DatePipe } from '@angular/common';
 import { API_STATUS_LABELS, ROLE_LABELS, reasonLabel } from '../core/labels';
 import { Incident } from '../core/models';
+import { SupervisorBriefingService } from '../supervisor-agent/briefing.service';
+import { SupervisorBriefingComponent } from '../supervisor-agent/supervisor-briefing.component';
 import { TrackingService } from './tracking.service';
 import { WORKFLOW_ACTIONS, WorkflowAction, WorkflowState, availableActions } from './workflow';
 
@@ -14,7 +16,7 @@ const STATE_TONES: Partial<Record<WorkflowState, string>> = {
 @Component({
   selector: 'app-incident-tracking',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DatePipe],
+  imports: [DatePipe, SupervisorBriefingComponent],
   template: `
     <div class="incident-work" [attr.data-incident]="incident.id">
       <h3>{{ reasonLabel(incident.reason) }} · {{ incident.id }}</h3>
@@ -74,6 +76,8 @@ const STATE_TONES: Partial<Record<WorkflowState, string>> = {
         <div class="source-status error" role="alert" data-testid="transition-error">{{ error() }}</div>
       }
 
+      <app-supervisor-briefing [incidentId]="incident.id" />
+
       @if (record().history.length > 0) {
         <ol class="audit-list" data-testid="history">
           @for (entry of record().history; track entry.at + entry.action) {
@@ -93,6 +97,7 @@ export class IncidentTrackingComponent {
   @Input({ required: true }) incident!: Incident;
 
   protected readonly tracking = inject(TrackingService);
+  private readonly briefings = inject(SupervisorBriefingService);
   protected readonly note = signal('');
   protected readonly error = signal<string | null>(null);
 
@@ -122,12 +127,14 @@ export class IncidentTrackingComponent {
   }
 
   protected perform(action: WorkflowAction): void {
-    const result = this.tracking.perform(this.incident.id, action, this.note());
+    const note = this.note();
+    const result = this.tracking.perform(this.incident.id, action, note);
     if ('error' in result) {
       this.error.set(result.error);
       return;
     }
     this.error.set(null);
     this.note.set('');
+    void this.briefings.requestFor(this.incident, action, this.record().state, note);
   }
 }

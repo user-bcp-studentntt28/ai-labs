@@ -19,10 +19,11 @@ por separado desde `web/`: `npm test`, `npm run test:coverage`, `npm run build`.
 
 | Control | Resultado |
 |---|---|
-| Archivos de prueba | 15 de 15 pasan |
-| Pruebas | 122 de 122 pasan |
-| `npm run build` | Correcto; bundle inicial de 246,12 kB (limite de aviso 500 kB) |
-| `openspec validate` de los cinco changes | Válido |
+| Archivos de prueba | 16 de 16 pasan |
+| Pruebas | 145 de 145 pasan |
+| `npm run build` | Correcto; bundle inicial de 254,87 kB (limite de aviso 500 kB) |
+| `openspec validate --all` de los seis changes | Válido |
+| `agent-supervisor/`: `pytest --cov=app` | 122 de 122 pasan; cobertura 99 % (sin red ni modelo real; una llamada real verificada a mano) |
 
 ## Cobertura
 
@@ -32,10 +33,10 @@ Fuente: `web/coverage/coverage-summary.json` (la carpeta está ignorada por Git)
 
 | Métrica | Cubierto / total | Porcentaje |
 |---|---|---|
-| Sentencias | 907 / 925 | 98,05 % |
-| Ramas | 321 / 341 | 94,13 % |
-| Funciones | 89 / 92 | 96,73 % |
-| Líneas | 907 / 925 | 98,05 % |
+| Sentencias | 1076 / 1094 | 98,35 % |
+| Ramas | 387 / 408 | 94,85 % |
+| Funciones | 103 / 106 | 97,16 % |
+| Líneas | 1076 / 1094 | 98,35 % |
 
 La meta del laboratorio es 85 %. Sin cubrir: `app.config.ts` y `models.ts` (0 %, solo configuración y tipos),
 `main.ts` (no está en `src/app`; lo cubre el build) y ramas de error poco frecuentes en `api-errors.ts`,
@@ -54,10 +55,12 @@ Cada caso nombra el escenario del spec que cubre.
 | | `execution/execution-panel.component.spec.ts` | 5 | Botón deshabilitado y explicación; métricas; resultado con cantidad; fallos separados; "no se ejecutó". |
 | #32 Revisión | `operations/operations.view-model.spec.ts` | 18 | Agrupación por referencia; fuente faltante; `BALANCE_MISMATCH` a nivel de wallet; "Sin ejecutar" y "Conciliada"; búsqueda por referencia, motivo e ID de incidencia; filtros por estado y motivo; alcance por wallet. |
 | | `operations/operations-list.component.spec.ts` | 10 | Lista y sección "Saldo de wallet"; aviso e interruptor del grupo; wallet sin pagos; filtros; detalle con estados y motivos; recargar y nueva conciliación desde el detalle. |
-| #34 Seguimiento | `tracking/workflow.spec.ts` | 12 | Cuatro transiciones válidas; rechazos por estado, rol y nota vacía o solo espacios; historial; acciones por rol. |
+| #34 Seguimiento | `tracking/workflow.spec.ts` | 13 | Cuatro transiciones válidas; rechazos por estado, rol y nota vacía o solo espacios (también al enviar a revisión: respuesta del analista); historial; acciones por rol. |
 | | `tracking/tracking.service.spec.ts` | 10 | Persistencia y recarga; clave `conciliacion:workflow:<grupo>:<wallet>`; separación por wallet; rol sin credenciales; almacenamiento no disponible; escritura fallida; registro y documento dañados; sin HTTP. |
 | | `tracking/workflow-storage.service.spec.ts` | 4 | Sin storage; storage que lanza excepciones; guardar y recuperar; versión o forma inválida. |
-| | `tracking/incident-tracking.component.spec.ts` | 6 | Estado local y del API a la vez; recorrido del analista; aprobar sin nota; cierre local con aviso de API sin cambios; devolver y reiniciar; sin almacenamiento. |
+| | `tracking/incident-tracking.component.spec.ts` | 10 | Estado local y del API a la vez; recorrido del analista; aprobar sin nota; cierre local con aviso de API sin cambios; devolver y reiniciar; sin almacenamiento; enviar a revisión sin respuesta no llama al agente; mensaje del agente visible al supervisor; agente caído conserva la transición; mensaje generado con IA. |
+| HU-CONC-06 Agente supervisor | `supervisor-agent/briefing.service.spec.ts` | 18 | Cuerpo y evento por acción (`STARTED`, `SUBMITTED`); el supervisor no llama al agente; agente caído, HTTP 502 y formato inesperado sin bloquear; respuesta vieja ignorada; fallo y ausencia de almacenamiento; documento dañado o de otra versión; validación `isBriefing`. |
+| | `agent-supervisor/tests/` (pytest) | 122 | Evidencia por motivo, resumen de respaldo, lectura del mock, token de GitHub y SDK de Copilot falsos, salida del modelo válida e inválida, orquestación con modelo falso, rutas `/health` y `/briefings` (200, 422, 502), CORS. |
 | #30 Escenarios | `provider-control/validation.spec.ts` | 15 | `amountCents` 1 y 49999 válidos; `0`, `-5`, `50000`, `100000000`, `12.5`, `abc` y vacío rechazados; `ORPHAN` con ID nuevo. |
 | | `provider-control/provider-control.service.spec.ts` | 10 | Cuerpo por modo; `400 INVALID_MODE`, `404`, `409 PROVIDER_ALREADY_EXISTS`, red; `CLEAR` neutral; respuesta sin `configured`; solo `/control/settlements`. |
 | | `provider-control/scenario-panel.component.spec.ts` | 5 | Lista de pagos; monto fuera de rango no se envía; mensaje de alcance; `MISSING` sin monto; `ORPHAN` y 409. |

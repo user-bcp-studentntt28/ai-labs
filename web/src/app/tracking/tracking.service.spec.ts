@@ -79,7 +79,7 @@ describe('TrackingService', () => {
     const { tracking } = setup(fake);
     tracking.perform('inc_1', 'start', '');
     tracking.role.set('ANALYST');
-    tracking.perform('inc_1', 'submit', '');
+    tracking.perform('inc_1', 'submit', 'respuesta');
     tracking.role.set('SUPERVISOR');
     expect(tracking.perform('inc_1', 'approve', 'ok').ok).toBe(true);
     expect(tracking.recordFor('inc_1').history.at(-1)?.role).toBe('SUPERVISOR');
@@ -88,7 +88,7 @@ describe('TrackingService', () => {
   it('rechaza la transición inválida o sin nota y no guarda nada', () => {
     const { tracking } = setup(fake);
     tracking.perform('inc_1', 'start', '');
-    tracking.perform('inc_1', 'submit', '');
+    tracking.perform('inc_1', 'submit', 'respuesta');
     tracking.role.set('SUPERVISOR');
     const result = tracking.perform('inc_1', 'approve', '  ');
     expect(result.ok).toBe(false);
@@ -108,7 +108,7 @@ describe('TrackingService', () => {
     const { tracking } = setup(fake);
     tracking.perform('inc_1', 'start', '');
     fake.failWrites = true;
-    const result = tracking.perform('inc_1', 'submit', '');
+    const result = tracking.perform('inc_1', 'submit', 'respuesta');
     expect(result.ok).toBe(false);
     expect(tracking.recordFor('inc_1').state).toBe('En atención');
   });
@@ -144,3 +144,4 @@ describe('TrackingService', () => {
     http.expectNone(() => true);
   });
 });
+

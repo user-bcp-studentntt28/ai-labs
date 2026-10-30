@@ -41,7 +41,7 @@ La demo debe representar un flujo de atención sobre las incidencias, por ejempl
 ## Supuestos y preguntas abiertas
 
 - **Decisión confirmada, transiciones:** el flujo es `Sin atender` → `En atención` → `En revisión` → `Cerrada localmente`, con `Devuelta` como estado al devolver. El spec no define una transición de salida desde `Devuelta`.
-- **Decisión, notas obligatorias:** "Aprobar cierre local" y "Devolver" exigen observaciones no vacías. "Enviar a revisión" la permite opcional.
+- **Decisión, notas obligatorias:** "Enviar a revisión" (respuesta del analista), "Aprobar cierre local" y "Devolver" exigen una nota no vacía. "Iniciar atención" no la exige. (La nota de "Enviar a revisión" era opcional; pasó a obligatoria en HU-CONC-06.)
 - **Decisión, salida de `Devuelta`:** el analista puede volver a iniciar la atención (`Devuelta` → `En atención`). El spec no lo definía; se añade como escenario.
 
 - Se asume que el selector de rol solo cambia el rol registrado en el historial.
