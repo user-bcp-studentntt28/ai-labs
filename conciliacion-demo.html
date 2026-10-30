@@ -1,0 +1,933 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f5f7fb">
+  <title>Conciliación de operaciones · Claro</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #17243b;
+      --muted: #718096;
+      --line: #e7ebf2;
+      --surface: #fff;
+      --canvas: #f5f7fb;
+      --navy: #17243b;
+      --blue: #4263eb;
+      --green: #14804a;
+      --green-soft: #e9f7ef;
+      --amber: #a45b08;
+      --amber-soft: #fff4df;
+      --red: #bd3535;
+      --red-soft: #fff0ef;
+      --shadow: 0 8px 28px rgba(31, 48, 77, .06);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--canvas); color: var(--ink); }
+    button, input, select { font: inherit; }
+    button { cursor: pointer; }
+    .app { display: flex; min-height: 100vh; }
+    .sidebar { width: 230px; flex: 0 0 230px; background: var(--navy); color: #d7deeb; padding: 24px 16px; }
+    .brand { display: flex; align-items: center; gap: 10px; padding: 0 10px 29px; color: #fff; font-size: 19px; font-weight: 750; }
+    .brand-mark { width: 31px; height: 31px; display: grid; place-items: center; border-radius: 10px; background: #89a0ff; color: var(--navy); font-weight: 850; }
+    .workspace-label { padding: 0 11px 9px; color: #93a2b9; text-transform: uppercase; letter-spacing: 1px; font-size: 10px; font-weight: 750; }
+    .nav-item { display: flex; gap: 11px; align-items: center; padding: 11px 12px; margin: 2px 0; border-radius: 9px; color: #d7deeb; font-size: 12px; }
+    .nav-item.active { background: #293752; color: #fff; }
+    .nav-icon { width: 18px; color: #aebce0; text-align: center; }
+    .sidebar-note { margin: 28px 3px 0; border: 1px solid #33425c; border-radius: 10px; padding: 12px; color: #aebbd0; font-size: 10px; line-height: 1.55; }
+    .sidebar-note b { color: #fff; }
+    .main { flex: 1; min-width: 0; }
+    .topbar { height: 62px; display: flex; align-items: center; justify-content: space-between; padding: 0 34px; background: var(--surface); border-bottom: 1px solid var(--line); }
+    .topbar-tools { display: flex; align-items: center; gap: 10px; }
+    .role-switch { display: flex; align-items: center; gap: 7px; color: var(--muted); font-size: 10px; }
+    .role-switch select { height: 31px; border: 1px solid #e3e7ef; border-radius: 7px; padding: 0 8px; background: #fff; color: #394861; font-size: 10px; }
+    .crumb { color: var(--muted); font-size: 11px; }
+    .crumb strong { color: var(--ink); }
+    .env-pill { display: inline-flex; gap: 6px; align-items: center; border-radius: 20px; padding: 6px 9px; color: #895411; background: #fff5e3; font-size: 9px; font-weight: 750; }
+    .env-pill::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: #db9429; }
+    .content { max-width: 1450px; margin: 0 auto; padding: 28px 34px 50px; }
+    .heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 19px; }
+    h1 { margin: 0; font-size: 24px; letter-spacing: -.7px; }
+    h2 { margin: 0; font-size: 14px; letter-spacing: -.2px; }
+    h3 { margin: 0; font-size: 11px; }
+    .subtitle { margin: 7px 0 0; color: var(--muted); font-size: 11px; }
+    .badge { display: inline-block; border-radius: 5px; background: #eef2ff; color: #4258ac; padding: 4px 7px; font-size: 9px; font-weight: 750; }
+    .notice { margin-bottom: 15px; border: 1px solid #dfe6ff; border-radius: 9px; background: #f0f4ff; color: #475675; padding: 11px 13px; font-size: 10px; line-height: 1.5; }
+    .notice b { color: #334878; }
+    .panel { overflow: hidden; border: 1px solid var(--line); border-radius: 11px; background: var(--surface); box-shadow: var(--shadow); }
+    .panel + .panel, .section-block { margin-top: 16px; }
+    .panel-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 16px 18px; }
+    .panel-caption { margin-top: 4px; color: var(--muted); font-size: 10px; }
+    .api-form { display: flex; flex-wrap: wrap; align-items: end; gap: 9px; padding: 0 18px 16px; }
+    .field { display: flex; flex: 1 1 240px; flex-direction: column; gap: 5px; color: #748197; font-size: 9px; font-weight: 650; }
+    .field.compact { flex: 1 1 135px; }
+    .field input, .field select { width: 100%; height: 34px; border: 1px solid #e3e7ef; border-radius: 7px; padding: 0 9px; background: #fff; color: #42516a; outline: 0; font-size: 10px; }
+    .field input:focus, .field select:focus { border-color: #9eafff; box-shadow: 0 0 0 3px #edf0ff; }
+    .btn { border: 1px solid #dfe4ed; border-radius: 7px; padding: 8px 11px; background: #fff; color: #394861; font-size: 10px; font-weight: 680; white-space: nowrap; }
+    .btn:hover { background: #f7f9fc; }
+    .btn-primary { border-color: var(--blue); background: var(--blue); color: #fff; }
+    .btn-primary:hover { background: #3455d5; }
+    .btn-danger { border-color: #f0d7d4; color: var(--red); }
+    .btn:disabled { opacity: .48; cursor: not-allowed; }
+    .source-status { padding: 0 18px 14px; color: var(--muted); font-size: 10px; line-height: 1.5; }
+    .source-status.error { color: var(--red); }
+    .source-status.success { color: var(--green); }
+    .workflow { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; padding: 0 18px 17px; }
+    .workflow-card { min-height: 102px; border: 1px solid var(--line); border-radius: 9px; padding: 11px; }
+    .step-num { display: grid; place-items: center; width: 22px; height: 22px; border-radius: 7px; background: #edf1ff; color: var(--blue); font-size: 10px; font-weight: 750; }
+    .workflow-card h3 { margin: 8px 0 5px; }
+    .workflow-card p { margin: 0; color: var(--muted); font-size: 9px; line-height: 1.45; }
+    .api-list { padding: 0 18px 16px; color: #728097; font-size: 9px; line-height: 1.6; }
+    code { color: #334878; font-size: 9px; }
+    .metrics { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin: 16px 0; }
+    .metric { border: 1px solid var(--line); border-radius: 10px; background: #fff; padding: 14px 16px; box-shadow: var(--shadow); }
+    .metric-label { color: var(--muted); font-size: 10px; }
+    .metric-value { margin-top: 10px; font-size: 22px; font-weight: 750; letter-spacing: -.6px; }
+    .metric-foot { margin-top: 4px; color: #8793a7; font-size: 9px; }
+    .filters { display: flex; flex-wrap: wrap; gap: 8px; padding: 0 18px 14px; }
+    .search { flex: 1 1 220px; }
+    .search input, .filters select { height: 33px; border: 1px solid #e3e7ef; border-radius: 7px; background: #fff; color: #42516a; padding: 0 9px; font-size: 10px; outline: 0; }
+    .search input { width: 100%; }
+    .filters select { min-width: 150px; }
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; min-width: 850px; border-collapse: collapse; }
+    th { padding: 10px 12px; border-top: 1px solid #edf0f5; border-bottom: 1px solid #edf0f5; background: #fbfcfe; color: #8692a4; text-align: left; text-transform: uppercase; letter-spacing: .45px; font-size: 9px; }
+    td { padding: 12px; border-bottom: 1px solid #f0f2f6; color: #43516a; font-size: 10px; vertical-align: middle; }
+    tbody tr { cursor: pointer; }
+    tbody tr:hover { background: #f8faff; }
+    .ref { color: #334b98; font-weight: 700; }
+    .subtext { margin-top: 3px; color: #8a96a8; font-size: 9px; }
+    .amount { color: #26354d; font-weight: 700; white-space: nowrap; }
+    .status { display: inline-flex; align-items: center; gap: 5px; border-radius: 20px; padding: 5px 8px; font-size: 9px; font-weight: 700; white-space: nowrap; }
+    .status::before { content: ""; width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
+    .status.open { background: var(--red-soft); color: var(--red); }
+    .status.resolved { background: var(--green-soft); color: var(--green); }
+    .status.matched { background: #eef1f5; color: #56657b; }
+    .status.unrun { background: var(--amber-soft); color: var(--amber); }
+    .empty { padding: 32px 18px; color: var(--muted); text-align: center; font-size: 11px; }
+    .table-footer { display: flex; justify-content: space-between; gap: 12px; padding: 11px 18px; color: #8390a3; font-size: 9px; }
+    .role-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 0 18px 17px; }
+    .role-card { border: 1px solid var(--line); border-radius: 9px; padding: 12px; }
+    .role-card p { margin: 6px 0 0; color: var(--muted); font-size: 10px; line-height: 1.5; }
+    .role-note { padding: 0 18px 16px; color: #718096; font-size: 9px; line-height: 1.5; }
+    .local-state { display: inline-block; border-radius: 20px; padding: 5px 8px; background: #f0f4ff; color: #4258ac; font-size: 9px; font-weight: 700; }
+    .local-state.pending { background: var(--amber-soft); color: var(--amber); }
+    .local-state.closed { background: var(--green-soft); color: var(--green); }
+    .local-state.returned { background: var(--red-soft); color: var(--red); }
+    .human-form { margin-top: 9px; }
+    .human-form label { display: block; color: #64728a; font-size: 9px; font-weight: 700; }
+    .human-form textarea { width: 100%; min-height: 66px; margin-top: 5px; border: 1px solid #e3e7ef; border-radius: 7px; padding: 8px; resize: vertical; color: var(--ink); font: inherit; font-size: 10px; }
+    .human-form .drawer-actions { margin-top: 7px; }
+    .local-note { margin-top: 7px; border-left: 3px solid #aebce0; padding-left: 8px; color: #64728a; font-size: 9px; line-height: 1.5; overflow-wrap: anywhere; }
+    .audit-list { margin: 8px 0 0; padding-left: 17px; color: #718096; font-size: 9px; line-height: 1.55; }
+    .local-warning { margin: 0 18px 14px; border-left: 3px solid #db9429; background: #fff8eb; padding: 9px 11px; color: #78551e; font-size: 9px; line-height: 1.5; }
+    .incident-work { margin: 10px 0; border: 1px solid #dfe6ff; border-radius: 9px; background: #f8f9ff; padding: 11px; }
+    .incident-work h3 { color: #334878; }
+    .incident-work ol { margin: 8px 0 0; padding-left: 18px; color: #56657b; font-size: 10px; line-height: 1.6; }
+    .incident-owner { margin-top: 7px; color: #64728a; font-size: 9px; line-height: 1.5; }
+    .drawer-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+    .scenario-body { display: flex; align-items: end; flex-wrap: wrap; gap: 9px; padding: 0 18px 15px; }
+    .scenario-warning { margin: 0 18px 14px; border-left: 3px solid #db9429; background: #fff8eb; padding: 9px 11px; color: #78551e; font-size: 9px; line-height: 1.5; }
+    .backdrop { position: fixed; inset: 0; z-index: 4; background: rgba(18, 30, 50, .34); opacity: 0; pointer-events: none; transition: opacity .2s; }
+    .backdrop.open { opacity: 1; pointer-events: auto; }
+    .drawer { position: fixed; z-index: 5; top: 0; right: 0; display: flex; width: min(475px, 100vw); height: 100vh; flex-direction: column; background: #fff; box-shadow: -12px 0 36px rgba(22, 38, 63, .16); transform: translateX(102%); transition: transform .22s ease; }
+    .drawer.open { transform: translateX(0); }
+    .drawer-head { padding: 19px 21px 14px; border-bottom: 1px solid var(--line); }
+    .drawer-topline { display: flex; align-items: center; justify-content: space-between; }
+    .drawer-title { font-size: 16px; font-weight: 750; }
+    .drawer-ref { margin-top: 8px; color: var(--blue); font-size: 10px; font-weight: 700; }
+    .close-btn { width: 29px; height: 29px; border: 0; border-radius: 7px; background: #f3f5f9; color: #65728a; font-size: 18px; }
+    .drawer-body { flex: 1; overflow-y: auto; padding: 16px 21px; }
+    .section-label { margin: 17px 0 8px; color: #8a96a8; text-transform: uppercase; letter-spacing: .6px; font-size: 9px; font-weight: 750; }
+    .compare { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
+    .source-card { border: 1px solid var(--line); border-radius: 8px; padding: 10px; }
+    .source-name { color: #7c899e; font-size: 9px; }
+    .source-value { margin-top: 7px; color: #26354d; font-size: 11px; font-weight: 700; overflow-wrap: anywhere; }
+    .source-meta { margin-top: 4px; color: #8491a4; font-size: 9px; }
+    .diff-box { border: 1px solid #f5e4bd; border-radius: 8px; background: #fff8eb; padding: 10px; color: #78551e; font-size: 10px; line-height: 1.5; }
+    .ledger-row { display: flex; justify-content: space-between; gap: 10px; padding: 8px 0; border-bottom: 1px solid #f0f2f6; color: #56657b; font-size: 9px; }
+    .toast { position: fixed; z-index: 8; bottom: 20px; left: 50%; transform: translate(-50%, 20px); opacity: 0; pointer-events: none; transition: .2s; padding: 11px 16px; border-radius: 8px; background: var(--navy); color: #fff; font-size: 10px; }
+    .toast.show { transform: translate(-50%, 0); opacity: 1; }
+    @media (max-width: 980px) {
+      .sidebar { width: 195px; flex-basis: 195px; }
+      .content { padding-right: 22px; padding-left: 22px; }
+      .topbar { padding-right: 22px; padding-left: 22px; }
+      .workflow { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 650px) {
+      .app { display: block; }
+      .sidebar { width: 100%; padding: 12px 15px; }
+      .brand { padding: 0; }
+      .sidebar nav, .sidebar .workspace-label, .sidebar-note { display: none; }
+      .topbar { height: auto; min-height: 49px; padding: 9px 15px; gap: 10px; }
+      .topbar-tools { flex-wrap: wrap; justify-content: flex-end; }
+      .role-switch { flex-wrap: wrap; justify-content: flex-end; }
+      .content { padding: 20px 13px 35px; }
+      .heading { flex-direction: column; }
+      h1 { font-size: 21px; }
+      .metrics { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+      .metric { padding: 12px; }
+      .workflow { grid-template-columns: 1fr 1fr; padding-right: 12px; padding-left: 12px; }
+      .panel-head { padding-right: 13px; padding-left: 13px; }
+      .api-form { padding-right: 13px; padding-left: 13px; }
+      .source-status { padding-right: 13px; padding-left: 13px; }
+      .filters { padding-right: 13px; padding-left: 13px; }
+      .role-grid { grid-template-columns: 1fr; padding-right: 13px; padding-left: 13px; }
+      .scenario-body { padding-right: 13px; padding-left: 13px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <div class="brand"><span class="brand-mark">C</span> claro<span style="color:#93a9ff">.</span></div>
+      <div class="workspace-label">Operaciones</div>
+      <nav aria-label="Navegación principal">
+        <div class="nav-item active"><span class="nav-icon">⇄</span>Conciliación <span id="nav-count" style="margin-left:auto">0</span></div>
+      </nav>
+      <div class="sidebar-note"><b>Flujo W6</b><br>La conciliación compara wallet, reporte del proveedor, ledger y saldos. Detecta diferencias; no mueve dinero ni repara registros.</div>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <div class="crumb">Operaciones <span style="padding:0 6px;color:#b2bac7">/</span> <strong>Conciliación</strong></div>
+        <div class="topbar-tools">
+          <label class="role-switch">Rol de demo
+            <select id="active-role" aria-label="Cambiar rol de demo"><option value="ANALYST">Analista</option><option value="SUPERVISOR">Supervisor</option></select>
+          </label>
+          <span class="env-pill">API · GRUPO 3</span>
+        </div>
+      </header>
+
+      <div class="content">
+        <section class="heading">
+          <div><h1>Conciliación de operaciones</h1><p class="subtitle">Consulta los datos del grupo y ejecuta la comparación definida por W6.</p></div>
+          <span class="badge">API + flujo humano local</span>
+        </section>
+
+        <div class="notice"><b>Fuentes de operación desde API; seguimiento humano en este navegador:</b> los estados y comentarios de analista/supervisor se guardan en localStorage y no modifican el API ni se comparten con otros usuarios o dispositivos.</div>
+
+        <section class="panel" aria-labelledby="connection-title">
+          <div class="panel-head"><div><h2 id="connection-title">Conexión y ejecución</h2><div class="panel-caption">Wallet, settlements, ledger e incidencias se consultan desde el mismo grupo.</div></div></div>
+          <div class="api-form">
+            <label class="field">URL base del grupo
+              <input id="api-base-url" type="url" value="https://bcp-wallet-mock.yefri.workers.dev/groups/3?latency=500" aria-label="URL base del API">
+            </label>
+            <label class="field compact">Wallet ID
+              <input id="wallet-id" type="text" value="wallet-demo" aria-label="Wallet ID">
+            </label>
+            <button class="btn" id="load-data-button" type="button">Cargar fuentes</button>
+            <button class="btn btn-primary" id="run-match-button" type="button" disabled>Ejecutar conciliación</button>
+          </div>
+          <div class="source-status" id="source-status" role="status">Carga las fuentes para consultar la información actual del API.</div>
+          <div class="workflow">
+            <article class="workflow-card"><span class="step-num">1</span><h3>Preparar fuentes</h3><p>Los pagos se crean y confirman por W2. Este panel consulta pagos, settlements, ledger e incidencias del grupo.</p></article>
+            <article class="workflow-card"><span class="step-num">2</span><h3>Conciliar</h3><p>POST /reconciliations compara pagos, reporte, asientos y saldos.</p></article>
+            <article class="workflow-card"><span class="step-num">3</span><h3>Revisar resultado</h3><p>Consultar incidencias OPEN o RESOLVED devueltas por el API.</p></article>
+            <article class="workflow-card"><span class="step-num">4</span><h3>Repetir tras corregir</h3><p>Analista actualiza fuentes y vuelve a conciliar; la API resuelve si desaparece la causa.</p></article>
+            <article class="workflow-card"><span class="step-num">5</span><h3>Validar cierre</h3><p>Supervisor revisa las fuentes y confirma RESOLVED. El visto bueno es local a esta sesión demo.</p></article>
+          </div>
+          <div class="api-list"><b>APIs consultadas:</b> <code>GET /payments?walletId=...</code>, <code>GET /settlements</code>, <code>GET /ledger</code>, <code>GET /reconciliations/incidents</code>. <b>Ejecución:</b> <code>POST /reconciliations</code>.</div>
+        </section>
+
+        <section class="metrics" aria-label="Resultado de conciliación">
+          <article class="metric"><div class="metric-label">Pagos wallet</div><div class="metric-value" id="metric-payments">—</div><div class="metric-foot">Respuesta de GET /payments</div></article>
+          <article class="metric"><div class="metric-label">Resultado de conciliación</div><div class="metric-value" id="metric-result">—</div><div class="metric-foot" id="metric-result-foot">Ejecuta POST /reconciliations</div></article>
+          <article class="metric"><div class="metric-label">Incidencias abiertas</div><div class="metric-value" id="metric-open">—</div><div class="metric-foot">Estado OPEN del API</div></article>
+          <article class="metric"><div class="metric-label">Asientos de ledger</div><div class="metric-value" id="metric-ledger">—</div><div class="metric-foot">Respuesta de GET /ledger</div></article>
+        </section>
+
+        <section class="panel" aria-labelledby="incidents-title">
+          <div class="panel-head"><div><h2 id="incidents-title">Operaciones conciliadas</h2><div class="panel-caption" id="result-caption">Selecciona una fila para ver quién atiende la incidencia y los pasos recomendados.</div></div><button class="btn" id="refresh-button" type="button" disabled>Actualizar fuentes</button></div>
+          <div class="filters">
+            <label class="search"><input id="search-input" type="search" placeholder="Buscar ID de pago, referencia o motivo..." aria-label="Buscar operaciones"></label>
+            <select id="status-filter" aria-label="Filtrar por estado">
+              <option value="">Todos los estados</option><option value="OPEN">Incidencia abierta</option><option value="RESOLVED">Incidencia resuelta</option><option value="MATCHED">Conciliada</option><option value="NOT_RUN">Sin ejecutar</option>
+            </select>
+            <select id="reason-filter" aria-label="Filtrar por tipo de incidencia"><option value="">Todos los motivos</option></select>
+          </div>
+          <div class="table-wrap">
+            <table><thead><tr><th>Pago / recurso</th><th>Wallet</th><th>Proveedor</th><th>Monto PEN</th><th>Incidencia</th><th>Responsable</th><th>Estado de atención</th><th>Estado API</th><th>Ledger</th></tr></thead><tbody id="incidents-body"></tbody></table>
+            <div class="empty" id="empty-state">Conectando al API y cargando las fuentes del grupo.</div>
+          </div>
+          <div class="table-footer"><span id="result-count">0 incidencias</span><span id="last-updated">Sin consulta</span></div>
+        </section>
+
+        <section class="panel section-block" aria-labelledby="scenario-title">
+          <div class="panel-head"><div><h2 id="scenario-title">Escenarios del API para verificar diferencias</h2><div class="panel-caption">Usa estos controles solo para preparar escenarios en el mock del grupo.</div></div></div>
+          <p class="scenario-warning"><b>Control de prueba del proveedor:</b> altera únicamente el reporte de settlements del API; no cambia wallet ni ledger. Después de aplicar un escenario, vuelve a ejecutar la conciliación. Usa CLEAR para restaurar el settlement de un pago.</p>
+          <div class="scenario-body">
+            <label class="field">Pago existente
+              <select id="scenario-payment"><option value="">Carga fuentes para listar IDs</option></select>
+            </label>
+            <label class="field compact">Modo
+              <select id="scenario-mode"><option value="AMOUNT">AMOUNT · monto distinto</option><option value="MISSING">MISSING · falta en reporte</option><option value="DUPLICATE">DUPLICATE · duplicado</option><option value="CLEAR">CLEAR · restaurar</option><option value="ORPHAN">ORPHAN · pago solo proveedor</option></select>
+            </label>
+            <label class="field compact" id="scenario-amount-field">Monto (céntimos PEN)
+              <input id="scenario-amount" type="number" min="1" step="1" placeholder="Importe en céntimos">
+            </label>
+            <label class="field" id="orphan-id-field" hidden>Nuevo ID sin pago en wallet · ORPHAN
+              <input id="orphan-id" type="text" placeholder="Ingresa un ID nuevo">
+            </label>
+            <button class="btn" id="apply-scenario-button" type="button" disabled>Aplicar control API</button>
+          </div>
+        </section>
+
+        <section class="panel section-block" aria-labelledby="roles-title">
+          <div class="panel-head"><div><h2 id="roles-title">Roles del flujo de atención</h2><div class="panel-caption">El analista investiga; el supervisor valida la resolución.</div></div></div>
+          <div class="role-grid">
+            <article class="role-card"><span class="badge">ANALISTA</span><p>Inicia la atención, revisa las fuentes, registra qué encontró y qué corrigió, y envía el caso a revisión del supervisor.</p></article>
+            <article class="role-card"><span class="badge">SUPERVISOR</span><p>Revisa notas y fuentes; aprueba el cierre local o devuelve el caso al analista con observaciones.</p></article>
+          </div>
+          <p class="local-warning"><b>Demo sin autenticación:</b> el selector de rol permite probar el flujo, pero no verifica identidad ni permisos. Los cambios se guardan en localStorage de este navegador; no se envían al API y no son una aprobación operativa real.</p>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <div class="backdrop" id="backdrop"></div>
+  <aside class="drawer" id="drawer" aria-label="Detalle de operación" aria-hidden="true">
+    <div class="drawer-head"><div class="drawer-topline"><div class="drawer-title">Detalle de operación</div><button class="close-btn" id="close-drawer" type="button" aria-label="Cerrar">×</button></div><div class="drawer-ref" id="drawer-ref"></div></div>
+    <div class="drawer-body" id="drawer-body"></div>
+  </aside>
+  <div class="toast" id="toast" role="status"></div>
+
+  <script>
+    const apiStatusLabels = { OPEN: "Abierta", RESOLVED: "Resuelta" };
+    const reasonLabels = {
+      DUPLICATE_PROVIDER: "Duplicado en proveedor",
+      MISSING_WALLET: "Falta en wallet",
+      MISSING_PROVIDER: "Falta en proveedor",
+      AMOUNT_MISMATCH: "Monto diferente",
+      STATUS_MISMATCH: "Estado diferente",
+      LEDGER_MISMATCH: "Ledger diferente",
+      LEDGER_UNBALANCED: "Ledger desbalanceado",
+      BALANCE_MISMATCH: "Saldo diferente"
+    };
+    const paymentStatusLabels = { PENDING: "Pendiente", SUCCEEDED: "Aprobado", REJECTED: "Rechazado", REVERSED: "Reversado" };
+    const state = {
+      payments: [],
+      settlements: [],
+      ledger: [],
+      incidents: [],
+      loaded: false,
+      loading: false,
+      lastRun: null,
+      workflow: new Map(),
+      workflowStorageAvailable: true,
+      workflowStorageError: "",
+      activeRole: "ANALYST"
+    };
+    let activeIncidentId = null;
+    let toastTimer;
+
+    const byId = id => document.getElementById(id);
+    const money = cents => `S/ ${(cents / 100).toFixed(2)}`;
+    const workflowStatusLabels = {
+      NEW: "Nueva",
+      IN_PROGRESS: "En análisis",
+      PENDING_SUPERVISOR: "Pendiente supervisor",
+      RETURNED: "Devuelta al analista",
+      CLOSED: "Cerrada localmente"
+    };
+
+    function workflowStorageKey() {
+      const base = new URL(apiBaseUrl());
+      const scope = `${base.origin}${base.pathname.replace(/\/+$/, "")}`;
+      const walletId = byId("wallet-id").value.trim();
+      return `conciliacion-demo:workflow:${scope}:${walletId}`;
+    }
+
+    function loadWorkflow() {
+      state.workflow = new Map();
+      state.workflowStorageAvailable = true;
+      state.workflowStorageError = "";
+      try {
+        const saved = localStorage.getItem(workflowStorageKey());
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+            throw new Error("el contenido guardado no tiene el formato esperado");
+          }
+          for (const [incidentId, record] of Object.entries(parsed)) {
+            if (!record || !Object.prototype.hasOwnProperty.call(workflowStatusLabels, record.status) || !Array.isArray(record.history)) {
+              throw new Error(`el registro de la incidencia ${incidentId} no es válido`);
+            }
+            state.workflow.set(incidentId, record);
+          }
+        }
+      } catch (error) {
+        state.workflowStorageAvailable = false;
+        state.workflowStorageError = error.message;
+        setStatus(`No se pudo cargar el seguimiento local: ${error.message}`, "error");
+      }
+    }
+
+    function persistWorkflow() {
+      try {
+        const records = Object.fromEntries(state.workflow);
+        localStorage.setItem(workflowStorageKey(), JSON.stringify(records));
+        state.workflowStorageAvailable = true;
+        state.workflowStorageError = "";
+        return true;
+      } catch (error) {
+        state.workflowStorageAvailable = false;
+        state.workflowStorageError = error.message;
+        setStatus(`No se pudo guardar el seguimiento local: ${error.message}`, "error");
+        return false;
+      }
+    }
+
+    function incidentWorkflow(incidentId) {
+      return state.workflow.get(incidentId) || { status: "NEW", analystNote: "", supervisorNote: "", history: [] };
+    }
+
+    function workflowOwner(status) {
+      if (status === "PENDING_SUPERVISOR") return "Supervisor";
+      if (status === "CLOSED") return "Cierre local";
+      return "Analista";
+    }
+
+    function workflowPriority(incidents) {
+      if (!incidents.length) return "NEW";
+      const statuses = incidents.map(incident => incidentWorkflow(incident.id).status);
+      const priority = ["PENDING_SUPERVISOR", "RETURNED", "IN_PROGRESS", "NEW", "CLOSED"];
+      return priority.find(candidate => statuses.includes(candidate)) || "NEW";
+    }
+
+    function workflowSummary(incidents) {
+      if (!incidents.length) return "—";
+      const status = workflowPriority(incidents);
+      return `<span class="local-state ${status === "PENDING_SUPERVISOR" ? "pending" : status === "CLOSED" ? "closed" : status === "RETURNED" ? "returned" : ""}">${escapeHtml(workflowStatusLabels[status])}</span><div class="subtext">${escapeHtml(workflowOwner(status))}</div>`;
+    }
+
+    function apiBaseUrl() {
+      return byId("api-base-url").value.trim().replace(/\/+$/, "");
+    }
+
+    function apiUrl(path) {
+      const base = apiBaseUrl();
+      if (!base) throw new Error("Ingresa la URL base del grupo.");
+      let baseUrl;
+      try {
+        baseUrl = new URL(base);
+      } catch {
+        throw new Error("La URL base del API no es válida.");
+      }
+      const baseParams = new URLSearchParams(baseUrl.search);
+      baseUrl.search = "";
+      const endpoint = new URL(path.replace(/^\/+/, ""), `${baseUrl.origin}${baseUrl.pathname.replace(/\/+$/, "")}/`);
+      baseParams.forEach((value, key) => {
+        if (!endpoint.searchParams.has(key)) endpoint.searchParams.set(key, value);
+      });
+      return endpoint;
+    }
+
+    async function requestApi(path, options = {}) {
+      let response;
+      try {
+        response = await fetch(apiUrl(path), {
+          ...options,
+          headers: { Accept: "application/json", ...(options.headers || {}) }
+        });
+      } catch {
+        throw new Error("No se pudo conectar al API. Verifica la URL y que el servicio permita solicitudes desde esta página (CORS).");
+      }
+      const text = await response.text();
+      let data = null;
+      if (text) {
+        try {
+          data = JSON.parse(text);
+        } catch {
+          throw new Error(`Respuesta no JSON en ${path} (HTTP ${response.status}).`);
+        }
+      }
+      if (!response.ok) {
+        const detail = data?.message || data?.error || data?.code || response.statusText;
+        throw new Error(`${path}: HTTP ${response.status}${detail ? ` · ${detail}` : ""}`);
+      }
+      return data;
+    }
+
+    function setStatus(message, kind = "") {
+      if (!state.workflowStorageAvailable && !message.includes("seguimiento local")) {
+        message += ` · Seguimiento local no disponible: ${state.workflowStorageError}`;
+        kind = "error";
+      }
+      const node = byId("source-status");
+      node.textContent = message;
+      node.className = `source-status ${kind}`;
+    }
+
+    function setBusy(busy) {
+      state.loading = busy;
+      byId("load-data-button").disabled = busy;
+      byId("run-match-button").disabled = busy || !state.loaded;
+      byId("refresh-button").disabled = busy || !state.loaded;
+      byId("apply-scenario-button").disabled = busy || !state.loaded;
+      const drawerRefresh = byId("drawer-refresh-button");
+      const drawerReconcile = byId("drawer-reconcile-button");
+      if (drawerRefresh) drawerRefresh.disabled = busy || !state.loaded;
+      if (drawerReconcile) drawerReconcile.disabled = busy || !state.loaded;
+      byId("drawer-body").querySelectorAll("[data-workflow-action]").forEach(button => {
+        button.disabled = busy || !state.workflowStorageAvailable;
+      });
+    }
+
+    function clearLoadedData() {
+      state.payments = [];
+      state.settlements = [];
+      state.ledger = [];
+      state.incidents = [];
+      state.loaded = false;
+      state.lastRun = null;
+      activeIncidentId = null;
+      byId("drawer").classList.remove("open");
+      byId("drawer").setAttribute("aria-hidden", "true");
+      byId("backdrop").classList.remove("open");
+      byId("incidents-body").innerHTML = "";
+      byId("reason-filter").innerHTML = '<option value="">Todos los motivos</option>';
+      updateSummary();
+      renderIncidents();
+      setBusy(false);
+    }
+
+    function showToast(message) {
+      const toast = byId("toast");
+      toast.textContent = message;
+      toast.classList.add("show");
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => toast.classList.remove("show"), 2800);
+    }
+
+    function updateSummary() {
+      byId("metric-payments").textContent = state.loaded ? state.payments.length : "—";
+      byId("metric-open").textContent = state.loaded ? state.incidents.filter(item => item.status === "OPEN").length : "—";
+      byId("metric-ledger").textContent = state.loaded ? state.ledger.length : "—";
+      byId("metric-result").textContent = state.lastRun?.status || "—";
+      byId("metric-result-foot").textContent = state.lastRun
+        ? `${state.lastRun.differences.length} diferencias en POST /reconciliations`
+        : "Ejecuta POST /reconciliations";
+      byId("nav-count").textContent = state.loaded ? state.incidents.filter(item => item.status === "OPEN").length : "0";
+      byId("active-role").value = state.activeRole;
+      populateScenarioPayments();
+    }
+
+    function populateScenarioPayments() {
+      const select = byId("scenario-payment");
+      const previous = select.value;
+      select.innerHTML = '<option value="">Selecciona un pago del API</option>' +
+        state.payments.map(payment => `<option value="${escapeHtml(payment.id)}">${escapeHtml(payment.id)} · ${money(payment.amount)}</option>`).join("");
+      if (state.payments.some(payment => payment.id === previous)) select.value = previous;
+    }
+
+    function escapeHtml(value) {
+      return String(value).replace(/[&<>"']/g, char => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[char]));
+    }
+
+    function operationRows() {
+      const byOperation = new Map();
+      state.payments.forEach(payment => byOperation.set(payment.id, { payment, settlements: [], incidents: [] }));
+      state.settlements.forEach(settlement => {
+        const row = byOperation.get(settlement.id) || { payment: null, settlements: [], incidents: [] };
+        row.settlements.push(settlement);
+        byOperation.set(settlement.id, row);
+      });
+      state.incidents.forEach(incident => {
+        const row = byOperation.get(incident.payment_id) || { payment: null, settlements: [], incidents: [] };
+        row.incidents.push(incident);
+        byOperation.set(incident.payment_id, row);
+      });
+      return [...byOperation.entries()].map(([id, row]) => {
+        const open = row.incidents.filter(item => item.status === "OPEN");
+        const resolved = row.incidents.filter(item => item.status === "RESOLVED");
+        const status = open.length ? "OPEN" : resolved.length ? "RESOLVED" : state.lastRun ? "MATCHED" : "NOT_RUN";
+        const reasons = [...new Set(row.incidents.map(item => item.reason))];
+        const amount = row.payment?.amount ?? row.settlements[0]?.amount ?? 0;
+        return {
+          id,
+          payment: row.payment,
+          settlements: row.settlements,
+          incidents: row.incidents,
+          status,
+          amount,
+          reason: reasons.map(reason => reasonLabels[reason] || reason).join(", ")
+        };
+      }).sort((a, b) => a.id.localeCompare(b.id));
+    }
+
+    function incidentGuidance(reason) {
+      const guidance = {
+        MISSING_PROVIDER: [
+          "Verifica que el pago exista y esté aprobado en Wallet.",
+          "Confirma si el settlement del proveedor falta para el mismo ID.",
+          "Solicita al responsable del proveedor la revisión o reenvío del reporte."
+        ],
+        AMOUNT_MISMATCH: [
+          "Compara el monto del pago con cada fila del settlement.",
+          "Verifica el comprobante o reporte de origen para identificar cuál monto es correcto.",
+          "Coordina la corrección con el dueño de la fuente; no ajustes el monto desde esta pantalla."
+        ],
+        DUPLICATE_PROVIDER: [
+          "Revisa todas las filas del proveedor asociadas al ID.",
+          "Confirma con el proveedor cuál registro es válido y solicita corregir el duplicado en su reporte."
+        ],
+        MISSING_WALLET: [
+          "Busca el ID en Wallet y confirma que se consultó el wallet correcto.",
+          "Si existe solo en el settlement, valida la operación con el proveedor y deriva la investigación al equipo dueño de Wallet."
+        ],
+        LEDGER_UNBALANCED: [
+          "Revisa los asientos del ledger asociados a la operación y la evidencia del pago.",
+          "Deriva el descuadre al responsable de contabilidad/ledger; no edites asientos desde esta pantalla."
+        ],
+        BALANCE_MISMATCH: [
+          "Compara el saldo calculado con los asientos y movimientos de Wallet.",
+          "Deriva la diferencia al responsable de Wallet/ledger para investigar el origen."
+        ]
+      };
+      return guidance[reason] || [
+        "Compara los datos de Wallet, settlement y ledger mostrados para esta operación.",
+        "Identifica la fuente que origina la diferencia y coordina su corrección con el equipo responsable."
+      ];
+    }
+
+    function renderIncidents() {
+      const query = byId("search-input").value.trim().toLocaleLowerCase("es");
+      const status = byId("status-filter").value;
+      const reason = byId("reason-filter").value;
+      const filtered = operationRows().filter(row => {
+        const text = `${row.id} ${row.reason} ${row.incidents.map(incident => incident.id).join(" ")}`.toLocaleLowerCase("es");
+        const matchesReason = !reason || row.incidents.some(incident => incident.reason === reason);
+        return (!query || text.includes(query)) && (!status || row.status === status) && matchesReason;
+      });
+      byId("incidents-body").innerHTML = filtered.map(row => `
+        <tr data-operation-id="${escapeHtml(row.id)}" tabindex="0" aria-label="Ver operación ${escapeHtml(row.id)}">
+          <td><span class="ref">${escapeHtml(row.id)}</span>${row.incidents.length ? `<div class="subtext">${row.incidents.length} incidencia(s)</div>` : ""}</td>
+          <td>${row.payment ? escapeHtml(paymentStatusLabels[row.payment.status] || row.payment.status) : "No encontrado"}</td>
+          <td>${row.settlements.length ? `${escapeHtml(paymentStatusLabels[row.settlements[0].status] || row.settlements[0].status)}${row.settlements.length > 1 ? `<div class="subtext">${row.settlements.length} filas proveedor</div>` : ""}` : "No encontrado"}</td>
+          <td class="amount">${money(row.amount)}</td>
+          <td>${row.reason ? escapeHtml(row.reason) : "—"}</td>
+          <td>${row.incidents.length ? escapeHtml(workflowOwner(workflowPriority(row.incidents))) : "—"}</td>
+          <td>${workflowSummary(row.incidents)}</td>
+          <td><span class="status ${row.status === "OPEN" ? "open" : row.status === "RESOLVED" ? "resolved" : row.status === "MATCHED" ? "matched" : "unrun"}">${row.status === "OPEN" ? "OPEN" : row.status === "RESOLVED" ? "RESOLVED" : row.status === "MATCHED" ? "Conciliada" : "Sin ejecutar"}</span></td>
+          <td>${state.ledger.filter(entry => entry.operation === row.id).length}</td>
+        </tr>`).join("");
+      const empty = byId("empty-state");
+      empty.hidden = filtered.length !== 0;
+      empty.textContent = !state.loaded
+        ? "Carga las fuentes del API para consultar las operaciones."
+        : !operationRows().length
+          ? "El API no devolvió operaciones ni incidencias para estas fuentes."
+          : "No hay operaciones que coincidan con estos filtros.";
+      byId("result-count").textContent = `${filtered.length} de ${operationRows().length} operaciones · ${state.incidents.length} incidencias API`;
+      byId("result-caption").textContent = state.lastRun
+        ? `Última respuesta POST /reconciliations: ${state.lastRun.status} · ${state.lastRun.differences.length} diferencias. Selecciona una fila para ver la atención del caso.`
+        : "Sin ejecución en esta sesión; las filas muestran fuentes API. Selecciona una para ver el responsable y los pasos de atención.";
+      byId("incidents-body").querySelectorAll("tr").forEach(row => {
+        row.addEventListener("click", () => openOperation(row.dataset.operationId));
+        row.addEventListener("keydown", event => {
+          if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+            openOperation(row.dataset.operationId);
+          }
+        });
+      });
+    }
+
+    async function loadSources({ allowConcurrentRefresh = false, preserveResult = false } = {}) {
+      if (state.loading && !allowConcurrentRefresh) return false;
+      if (!preserveResult) {
+        state.lastRun = null;
+        updateSummary();
+      }
+      const walletId = byId("wallet-id").value.trim();
+      if (!walletId) {
+        setStatus("Ingresa el wallet ID para consultar sus pagos.", "error");
+        return false;
+      }
+      setBusy(true);
+      setStatus(`Consultando APIs del grupo ${apiBaseUrl()}...`);
+      try {
+        const [payments, settlements, ledger, incidents] = await Promise.all([
+          requestApi(`/payments?walletId=${encodeURIComponent(walletId)}`),
+          requestApi("/settlements"),
+          requestApi("/ledger"),
+          requestApi("/reconciliations/incidents")
+        ]);
+        if (![payments, settlements, ledger, incidents].every(Array.isArray)) {
+          throw new Error("Una respuesta no coincide con el formato de lista definido en OpenAPI.");
+        }
+        state.payments = payments;
+        state.settlements = settlements;
+        state.ledger = ledger;
+        state.incidents = incidents;
+        state.loaded = true;
+        const reasons = [...new Set(incidents.map(item => item.reason))].sort();
+        const reasonFilter = byId("reason-filter");
+        const selectedReason = reasonFilter.value;
+        reasonFilter.innerHTML = '<option value="">Todos los motivos</option>' +
+          reasons.map(reason => `<option value="${escapeHtml(reason)}">${escapeHtml(reasonLabels[reason] || reason)}</option>`).join("");
+        if (reasons.includes(selectedReason)) reasonFilter.value = selectedReason;
+        setStatus(`Fuentes cargadas desde API · ${payments.length} pagos wallet · ${settlements.length} settlements · ${ledger.length} asientos · ${incidents.length} incidencias.`, "success");
+        byId("last-updated").textContent = `Consultado ${new Intl.DateTimeFormat("es-PE", { dateStyle: "short", timeStyle: "short" }).format(new Date())}`;
+        updateSummary();
+        renderIncidents();
+        if (activeIncidentId) openOperation(activeIncidentId);
+        return true;
+      } catch (error) {
+        clearLoadedData();
+        setStatus(`Error de API: ${error.message}`, "error");
+        return false;
+      } finally {
+        setBusy(false);
+      }
+    }
+
+    async function runReconciliation() {
+      if (state.loading) return;
+      if (!state.loaded) {
+        showToast("Carga primero las fuentes del API.");
+        return;
+      }
+      setBusy(true);
+      setStatus("Ejecutando POST /reconciliations...");
+      try {
+        const result = await requestApi("/reconciliations", { method: "POST" });
+        if (!result || !["MATCHED", "DIFFERENCES"].includes(result.status) || !Array.isArray(result.differences)) {
+          throw new Error("La respuesta no coincide con el esquema Reconciliation de OpenAPI.");
+        }
+        state.lastRun = result;
+        if (!await loadSources({ allowConcurrentRefresh: true, preserveResult: true })) {
+          showToast("La conciliación se ejecutó; falló la actualización posterior de fuentes.");
+          return;
+        }
+        setStatus(`Conciliación API completada · ${result.status} · ${result.differences.length} diferencias en la respuesta.`, result.status === "MATCHED" ? "success" : "");
+        renderIncidents();
+        showToast(result.status === "MATCHED" ? "Resultado API: MATCHED, sin diferencias." : `Resultado API: ${result.differences.length} diferencias.`);
+      } catch (error) {
+        setStatus(`Error en POST /reconciliations: ${error.message}`, "error");
+        showToast("No se pudo ejecutar la conciliación.");
+      } finally {
+        setBusy(false);
+      }
+    }
+
+    function updateScenarioFields() {
+      const mode = byId("scenario-mode").value;
+      byId("scenario-amount-field").hidden = !["AMOUNT", "ORPHAN"].includes(mode);
+      byId("orphan-id-field").hidden = mode !== "ORPHAN";
+      byId("scenario-payment").disabled = mode === "ORPHAN";
+    }
+
+    async function applySettlementControl() {
+      if (state.loading) return;
+      const mode = byId("scenario-mode").value;
+      const paymentId = mode === "ORPHAN" ? byId("orphan-id").value.trim() : byId("scenario-payment").value;
+      if (!paymentId) {
+        showToast(mode === "ORPHAN" ? "Ingresa un ID nuevo para la fila huérfana." : "Selecciona un pago obtenido del API.");
+        return;
+      }
+      const body = { paymentId, mode };
+      if (["AMOUNT", "ORPHAN"].includes(mode)) {
+        const amount = Number(byId("scenario-amount").value);
+        if (!Number.isInteger(amount) || amount < 1) {
+          showToast("El monto debe ser un entero positivo en céntimos PEN.");
+          return;
+        }
+        body.amountCents = amount;
+      }
+      setBusy(true);
+      setStatus(`Enviando POST /control/settlements · ${mode}...`);
+      try {
+        const result = await requestApi("/control/settlements", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body)
+        });
+        if (!result || result.configured !== true) throw new Error("La respuesta no confirma que el control quedó configurado.");
+        if (!await loadSources({ allowConcurrentRefresh: true })) {
+          showToast("Control API aplicado, pero falló la actualización de fuentes.");
+          return;
+        }
+        setStatus(`Control API aplicado · ${mode} · ${paymentId}. Ejecuta POST /reconciliations para actualizar el resultado.`, "success");
+        showToast(`Control ${mode} aplicado mediante API.`);
+      } catch (error) {
+        setStatus(`Error en POST /control/settlements: ${error.message}`, "error");
+        showToast("No se pudo aplicar el control API.");
+      } finally {
+        setBusy(false);
+      }
+    }
+
+    function renderIncidentWorkflow(incident) {
+      const record = incidentWorkflow(incident.id);
+      const status = record.status;
+      const role = state.activeRole;
+      const tone = status === "PENDING_SUPERVISOR" ? "pending" : status === "CLOSED" ? "closed" : status === "RETURNED" ? "returned" : "";
+      let actionControls = "";
+
+      if (role === "ANALYST" && status === "NEW") {
+        actionControls = `<div class="drawer-actions"><button class="btn btn-primary" data-workflow-action="start" data-incident-id="${escapeHtml(incident.id)}" type="button">Iniciar atención</button></div>`;
+      } else if (role === "ANALYST" && ["IN_PROGRESS", "RETURNED"].includes(status)) {
+        actionControls = `<div class="human-form"><label>Hallazgo, evidencia y corrección coordinada<textarea data-workflow-note-for="${escapeHtml(incident.id)}" placeholder="Describe qué revisaste, con quién coordinaste y qué se corrigió."></textarea></label><div class="drawer-actions"><button class="btn btn-primary" data-workflow-action="submit" data-incident-id="${escapeHtml(incident.id)}" type="button">Enviar a supervisor</button></div></div>`;
+      } else if (role === "SUPERVISOR" && status === "PENDING_SUPERVISOR") {
+        actionControls = `<div class="human-form"><label>Observación del supervisor<textarea data-workflow-note-for="${escapeHtml(incident.id)}" placeholder="Registra la revisión de evidencias y tu decisión."></textarea></label><div class="drawer-actions"><button class="btn btn-primary" data-workflow-action="approve" data-incident-id="${escapeHtml(incident.id)}" type="button">Aprobar cierre local</button><button class="btn btn-danger" data-workflow-action="return" data-incident-id="${escapeHtml(incident.id)}" type="button">Devolver al analista</button></div></div>`;
+      } else {
+        actionControls = `<div class="incident-owner">${role === "ANALYST" ? "Caso en revisión del supervisor." : status === "CLOSED" ? "El caso está cerrado localmente." : "El analista debe atender o actualizar el caso."}</div>`;
+      }
+
+      const history = record.history.length
+        ? `<ol class="audit-list">${record.history.map(event => `<li><b>${escapeHtml(event.role === "ANALYST" ? "Analista" : "Supervisor")}</b> · ${escapeHtml(event.action)} · ${escapeHtml(new Intl.DateTimeFormat("es-PE", { dateStyle: "short", timeStyle: "short" }).format(new Date(event.at)))}${event.note ? `<div class="local-note">${escapeHtml(event.note)}</div>` : ""}</li>`).join("")}</ol>`
+        : "";
+      const localCloseWarning = status === "CLOSED" && incident.status !== "RESOLVED"
+        ? `<div class="scenario-warning">Cierre humano local; el API todavía informa ${escapeHtml(apiStatusLabels[incident.status] || incident.status)}. Esto no resuelve la diferencia técnica.</div>`
+        : "";
+
+      return `<div class="incident-work">
+        <h3>${escapeHtml(reasonLabels[incident.reason] || incident.reason)}</h3>
+        <div class="incident-owner">Estado de atención: <span class="local-state ${tone}">${escapeHtml(workflowStatusLabels[status])}</span> · Responsable: ${escapeHtml(workflowOwner(status))}</div>
+        <div class="incident-owner">Estado de conciliación API: <b>${escapeHtml(apiStatusLabels[incident.status] || incident.status)}</b>. El flujo humano no cambia este estado.</div>
+        ${record.analystNote ? `<div class="local-note"><b>Nota del analista:</b> ${escapeHtml(record.analystNote)}</div>` : ""}
+        ${record.supervisorNote ? `<div class="local-note"><b>Nota del supervisor:</b> ${escapeHtml(record.supervisorNote)}</div>` : ""}
+        ${role === "ANALYST" && status !== "CLOSED" ? `<ol>${incidentGuidance(incident.reason).map(step => `<li>${escapeHtml(step)}</li>`).join("")}</ol>` : ""}
+        ${actionControls}${localCloseWarning}${history}
+      </div>`;
+    }
+
+    function openOperation(id) {
+      const row = operationRows().find(item => item.id === id);
+      if (!row) return;
+      activeIncidentId = id;
+      const payment = row.payment;
+      const ledgerRows = state.ledger.filter(item => item.operation === id);
+      byId("drawer-ref").textContent = id;
+      byId("drawer-body").innerHTML = `
+        ${row.incidents.length ? `<div class="section-label" style="margin-top:0">Atención humana · Rol actual: ${state.activeRole === "ANALYST" ? "Analista" : "Supervisor"}</div>${row.incidents.map(renderIncidentWorkflow).join("")}` : ""}
+        <div class="section-label" style="margin-top:0">Resultado de conciliación</div>
+        <div class="compare">
+          <div class="source-card"><div class="source-name">Wallet · GET /payments</div><div class="source-value">${payment ? `${money(payment.amount)} · ${escapeHtml(paymentStatusLabels[payment.status] || payment.status)}` : "Sin pago"}</div><div class="source-meta">${payment ? `Destinatario ${escapeHtml(payment.recipient)} · ${escapeHtml(payment.wallet_id)}` : "El ID no aparece en los pagos de la wallet consultada."}</div></div>
+          <div class="source-card"><div class="source-name">Proveedor · GET /settlements</div><div class="source-value">${row.settlements.length ? `${money(row.settlements[0].amount)} · ${escapeHtml(paymentStatusLabels[row.settlements[0].status] || row.settlements[0].status)}` : "Sin registro"}</div><div class="source-meta">${row.settlements.length > 1 ? `${row.settlements.length} filas con este ID.` : "Respuesta del API del grupo."}</div></div>
+        </div>
+        <div class="section-label">Incidencias · GET /reconciliations/incidents</div>
+        ${row.incidents.length ? row.incidents.map(incident => `<div class="source-card" style="margin-bottom:7px"><div class="source-name">${escapeHtml(incident.id)} · ${escapeHtml(apiStatusLabels[incident.status] || incident.status)}</div><div class="source-value">${escapeHtml(reasonLabels[incident.reason] || incident.reason)}</div><div class="source-meta">${escapeHtml(incident.reason)}</div></div>`).join("") : '<div class="source-card"><div class="source-value">El API no reporta incidencias para esta operación.</div></div>'}
+        <div class="section-label">Ledger · GET /ledger (${ledgerRows.length} asientos)</div>
+        ${ledgerRows.length ? ledgerRows.map(entry => `<div class="ledger-row"><span>#${entry.id} · ${escapeHtml(entry.kind)} · ${escapeHtml(entry.account)}</span><b>${money(entry.amount)}</b></div>`).join("") : '<div class="source-meta">No hay asientos asociados a este recurso en la respuesta consultada.</div>'}
+        ${row.incidents.length ? `<div class="section-label">Actualizar y conciliar fuentes</div><div class="incident-owner">Después de corregir el origen fuera de la web, actualiza las fuentes y vuelve a ejecutar la conciliación. Si el contrato no ofrece corrección para ese origen, registra la coordinación en la nota del analista; el estado de atención local no cambia el resultado del API.</div><div class="drawer-actions"><button class="btn" id="drawer-refresh-button" type="button">Actualizar fuentes</button><button class="btn btn-primary" id="drawer-reconcile-button" type="button">Volver a conciliar</button></div>` : ""}
+        <div class="scenario-warning" style="margin:15px 0 0">Los estados, decisiones y notas humanas se guardan en localStorage para este grupo y wallet. Son independientes del estado de conciliación API y no se sincronizan entre usuarios o dispositivos.</div>`;
+      byId("drawer-refresh-button")?.addEventListener("click", loadSources);
+      byId("drawer-reconcile-button")?.addEventListener("click", runReconciliation);
+      byId("drawer-body").querySelectorAll("[data-workflow-action]").forEach(button => {
+        button.disabled = !state.workflowStorageAvailable;
+        button.addEventListener("click", () => handleWorkflowAction(button.dataset.incidentId, button.dataset.workflowAction));
+      });
+      byId("drawer").classList.add("open");
+      byId("drawer").setAttribute("aria-hidden", "false");
+      byId("backdrop").classList.add("open");
+    }
+
+    function handleWorkflowAction(incidentId, action) {
+      if (!state.workflowStorageAvailable) {
+        showToast("No está disponible el almacenamiento local; no se guardó ningún cambio.");
+        return;
+      }
+      const incident = state.incidents.find(item => item.id === incidentId);
+      if (!incident) {
+        showToast("La incidencia ya no está en las fuentes cargadas. Actualiza los datos.");
+        return;
+      }
+      const previous = incidentWorkflow(incidentId);
+      const next = { ...previous, history: [...previous.history] };
+      const noteField = [...byId("drawer-body").querySelectorAll("[data-workflow-note-for]")]
+        .find(field => field.dataset.workflowNoteFor === incidentId);
+      const note = noteField?.value.trim() || "";
+      let historyAction = "";
+
+      if (action === "start" && state.activeRole === "ANALYST" && previous.status === "NEW") {
+        next.status = "IN_PROGRESS";
+        historyAction = "Inició la atención";
+      } else if (action === "submit" && state.activeRole === "ANALYST" && ["IN_PROGRESS", "RETURNED"].includes(previous.status)) {
+        if (!note) {
+          showToast("Registra el hallazgo y la corrección coordinada antes de enviar a revisión.");
+          return;
+        }
+        next.status = "PENDING_SUPERVISOR";
+        next.analystNote = note;
+        historyAction = "Envió el caso a revisión";
+      } else if (action === "approve" && state.activeRole === "SUPERVISOR" && previous.status === "PENDING_SUPERVISOR") {
+        if (!note) {
+          showToast("Registra la revisión del supervisor antes de aprobar el cierre.");
+          return;
+        }
+        next.status = "CLOSED";
+        next.supervisorNote = note;
+        historyAction = "Aprobó el cierre local";
+      } else if (action === "return" && state.activeRole === "SUPERVISOR" && previous.status === "PENDING_SUPERVISOR") {
+        if (!note) {
+          showToast("Indica el motivo de devolución al analista.");
+          return;
+        }
+        next.status = "RETURNED";
+        next.supervisorNote = note;
+        historyAction = "Devolvió el caso al analista";
+      } else {
+        showToast("La acción no está permitida para el rol o estado actual.");
+        return;
+      }
+
+      next.history.push({ role: state.activeRole, action: historyAction, note, at: new Date().toISOString() });
+      state.workflow.set(incidentId, next);
+      if (!persistWorkflow()) {
+        state.workflow.set(incidentId, previous);
+        showToast("No se pudo guardar el cambio local.");
+        return;
+      }
+      renderIncidents();
+      openOperation(activeIncidentId);
+      showToast(`${historyAction}. Guardado localmente.`);
+    }
+
+    function closeDrawer() {
+      byId("drawer").classList.remove("open");
+      byId("drawer").setAttribute("aria-hidden", "true");
+      byId("backdrop").classList.remove("open");
+      activeIncidentId = null;
+    }
+
+    byId("load-data-button").addEventListener("click", loadSources);
+    byId("refresh-button").addEventListener("click", loadSources);
+    byId("run-match-button").addEventListener("click", runReconciliation);
+    byId("scenario-mode").addEventListener("change", updateScenarioFields);
+    byId("apply-scenario-button").addEventListener("click", applySettlementControl);
+    byId("search-input").addEventListener("input", renderIncidents);
+    byId("status-filter").addEventListener("change", renderIncidents);
+    byId("reason-filter").addEventListener("change", renderIncidents);
+    byId("active-role").addEventListener("change", () => {
+      state.activeRole = byId("active-role").value;
+      renderIncidents();
+      if (activeIncidentId) openOperation(activeIncidentId);
+    });
+    byId("api-base-url").addEventListener("input", () => {
+      clearLoadedData();
+      loadWorkflow();
+      renderIncidents();
+      setStatus("La URL cambió. Carga las fuentes del nuevo endpoint antes de ejecutar la conciliación.");
+    });
+    byId("wallet-id").addEventListener("input", () => {
+      clearLoadedData();
+      loadWorkflow();
+      renderIncidents();
+    });
+    byId("close-drawer").addEventListener("click", closeDrawer);
+    byId("backdrop").addEventListener("click", closeDrawer);
+    document.addEventListener("keydown", event => { if (event.key === "Escape") closeDrawer(); });
+    updateScenarioFields();
+    loadWorkflow();
+    updateSummary();
+    renderIncidents();
+    loadSources();
+  </script>
+</body>
+</html>
