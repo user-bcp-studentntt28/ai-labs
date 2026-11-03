@@ -11,6 +11,4 @@ duplicate-transfer complaints in one month.
 - Duplicate complaints drop 20% within one month.
 - No sensitive values appear in confirmation event logs.
 
-## 9. Open questions
-- What baseline measures the 20% reduction?
-- Which API version owns the confirmation contract?
+## 9. Op
